@@ -1,11 +1,21 @@
-<div align="center">
+# Designatore Purchase Management App
 
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+An advanced AI-powered application for Designatore, a furniture manufacturing company, to streamline material ordering, manage inventory, and enhance team collaboration.
 
-  <h1>Built with AI Studio</h2>
+## Features
 
-  <p>The fastest path from prompt to production with Gemini.</p>
+*   **Role-Based Access Control:** Separate dashboards and permissions for Managers, Purchasers, and Inventory Managers.
+*   **AI Material Suggester:** Get intelligent material suggestions based on natural language queries.
+*   **Inventory Management:** Track material stock levels, set thresholds, and receive low-stock alerts.
+*   **Purchase Order Workflow:** Create, edit, and manage purchase orders with an approval process for purchasers.
+*   **Purchase Intents:** Inventory managers can raise purchase intents for required materials.
+*   **Material Issuance:** Record material consumption for different sites/projects.
+*   **Master Data Management:** Centralized management for materials, vendors, and sites.
+*   **Reporting:** Generate various reports on orders, inventory, and material consumption.
 
-  <a href="https://aistudio.google.com/apps">Start building</a>
+## Tech Stack
 
-</div>
+*   React
+*   TypeScript
+*   Tailwind CSS
+*   Google Gemini API (for AI features)

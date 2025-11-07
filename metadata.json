@@ -1,0 +1,5 @@
+{
+  "name": "Designatore Purchase Management App",
+  "description": "An advanced AI-powered application for Designatore, a furniture manufacturing company, to streamline material ordering, manage inventory, and enhance team collaboration. Features include bilingual support (English/Hindi), priority-based ordering, vendor management, and automated purchase requests based on inventory thresholds.",
+  "requestFramePermissions": []
+}
