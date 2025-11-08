@@ -1,6 +1,5 @@
-
 import React, { useState, useMemo } from 'react';
-import { AppNotification, Material, PurchaseOrder, User, OrderStatus, PurchaseIntent, PurchaseIntentStatus } from '../types';
+import { AppNotification, Material, PurchaseOrder, User, OrderStatus, PurchaseIntent, PurchaseIntentStatus, OrderLineItem } from '../types';
 import { useAppContext } from '../context/AppContext';
 import InventoryTable from './InventoryTable';
 import OrderTable from './OrderTable';
@@ -19,9 +18,9 @@ import IssuanceHistory from './IssuanceHistory';
 import RejectionModal from './RejectionModal';
 import NewPurchaseIntentForm from './NewPurchaseIntentForm';
 import PurchaseIntentsTable from './PurchaseIntentsTable';
-// FIX: Standardized icon import path to use './icons' to resolve file casing conflicts in the build system.
 import { PlusIcon, AlertTriangleIcon, CheckCircleIcon, InformationCircleIcon, ClipboardDocumentListIcon, ArchiveBoxIcon, Squares2X2Icon, ChartBarIcon, XMarkIcon, BuildingOfficeIcon, ReceiptRefundIcon, ArrowLeftStartOnRectangleIcon, DocumentPlusIcon, ClipboardDocumentCheckIcon } from './icons';
 import Reports from './Reports';
+import LowStockAlerts from './LowStockAlerts';
 
 
 interface DashboardProps {
@@ -98,6 +97,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
   const [showReports, setShowReports] = useState<boolean>(false);
   const [showIssuanceHistory, setShowIssuanceHistory] = useState<boolean>(false);
   const [showInventory, setShowInventory] = useState<boolean>(false);
+  const [showLowStock, setShowLowStock] = useState<boolean>(false);
   const [orderInitialData, setOrderInitialData] = useState<Partial<PurchaseOrder> | undefined>(undefined);
 
   const createOrderFromIntent = (intent: PurchaseIntent) => {
@@ -109,6 +109,27 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
   const handleCloseNewOrderModal = () => {
     setIsModalOpen(false);
     setOrderInitialData(undefined);
+  };
+
+  const createOrderForLowStock = (materialId: string) => {
+    const material = materials.find(m => m.id === materialId);
+    if (!material) return;
+
+    const inventoryItem = inventory.find(i => i.id === materialId);
+    const suggestedQuantity = inventoryItem ? Math.max(inventoryItem.threshold, inventoryItem.threshold * 2 - inventoryItem.quantity) : 20;
+
+    // FIX: Changed initialLineItem from Partial<OrderLineItem> to OrderLineItem by adding required properties 'id' and 'specifications' to resolve TypeScript error.
+    const initialLineItem: OrderLineItem = {
+        id: `temp-li-${Date.now()}`,
+        materialId: material.id,
+        unit: material.unit,
+        quantity: suggestedQuantity,
+        specifications: '', // required property
+        rate: 0,
+        gst: 18,
+    };
+    setOrderInitialData({ lineItems: [initialLineItem] });
+    setIsModalOpen(true);
   };
   
   const lowStockItems = useMemo(() => {
@@ -131,7 +152,7 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
     </div>;
   }
   
-  const activeView = showHistory ? 'history' : showReports ? 'reports' : showIssuanceHistory ? 'issuanceHistory' : showInventory ? 'inventory' : 'dashboard';
+  const activeView = showHistory ? 'history' : showReports ? 'reports' : showIssuanceHistory ? 'issuanceHistory' : showInventory ? 'inventory' : showLowStock ? 'lowStock' : 'dashboard';
 
   const notificationConfig = {
     warning: { bg: 'bg-amber-100', border: 'border-amber-200', text: 'text-amber-800', icon: <AlertTriangleIcon className="w-5 h-5 mr-3" /> },
@@ -159,12 +180,13 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
                 {activeView === 'reports' && 'Reports'}
                 {activeView === 'issuanceHistory' && 'Issuance History'}
                 {activeView === 'inventory' && 'Inventory Status'}
+                {activeView === 'lowStock' && 'Low Stock Alerts'}
                 {activeView === 'dashboard' && 'Dashboard'}
             </h1>
             <div className="flex items-center gap-2 md:gap-3 flex-wrap">
                  {activeView !== 'dashboard' ? (
                     <button
-                        onClick={() => { setShowHistory(false); setShowReports(false); setShowIssuanceHistory(false); setShowInventory(false); }}
+                        onClick={() => { setShowHistory(false); setShowReports(false); setShowIssuanceHistory(false); setShowInventory(false); setShowLowStock(false); }}
                         className="px-4 py-2 bg-white hover:bg-gray-100 border border-gray-300 rounded-md text-gray-800 font-medium transition text-sm"
                     >
                         Back to Dashboard
@@ -178,6 +200,18 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
                             <ClipboardDocumentCheckIcon className="w-4 h-4" />
                             View Inventory Status
                         </button>
+                        {lowStockItems.length > 0 && currentUser.role !== 'inventory_manager' && (
+                            <button
+                                onClick={() => setShowLowStock(true)}
+                                className="relative px-4 py-2 bg-amber-100 hover:bg-amber-200 border border-amber-300 rounded-md text-amber-800 font-medium transition text-sm flex items-center gap-2"
+                            >
+                                <AlertTriangleIcon className="w-4 h-4" />
+                                Low Stock Alerts
+                                <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center border-2 border-white">
+                                    {lowStockItems.length}
+                                </span>
+                            </button>
+                        )}
                         <button
                             onClick={() => setShowHistory(true)}
                             className="px-4 py-2 bg-white hover:bg-gray-100 border border-gray-300 rounded-md text-gray-800 font-medium transition text-sm flex items-center gap-2"
@@ -216,26 +250,6 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
         {/* --- Main Content Area --- */}
         {activeView === 'dashboard' && (
             <div className="space-y-8">
-
-                {/* Low Stock Alerts */}
-                {lowStockItems.length > 0 && currentUser.role !== 'inventory_manager' && (
-                    <div>
-                        <h3 className="text-lg font-semibold text-gray-800 mb-2">Low Stock Alerts</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {lowStockItems.map(item => (
-                            <div key={item.id} className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex justify-between items-center">
-                                <div>
-                                    <p className="font-semibold text-amber-900">{item.name}</p>
-                                    <p className="text-sm text-amber-700">In Stock: {item.quantity} {item.unit} (Threshold: {item.threshold})</p>
-                                </div>
-                                <button onClick={() => setIsModalOpen(true)} className="px-3 py-1.5 bg-white hover:bg-gray-50 border border-gray-300 rounded-md text-gray-800 font-medium transition text-xs shadow-sm">
-                                    Create PO
-                                </button>
-                            </div>
-                        ))}
-                        </div>
-                    </div>
-                )}
                 
                 {/* Management & Action Panels */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -350,6 +364,8 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
         {activeView === 'reports' && <Reports orders={orders} vendors={vendors} materials={materials} currentUser={currentUser} inventory={inventory} issuances={issuances} purchaseIntents={purchaseIntents} sites={sites}/>}
         {activeView === 'issuanceHistory' && <IssuanceHistory issuances={issuances} materials={materials} sites={sites} onBack={() => setShowIssuanceHistory(false)} />}
         {activeView === 'inventory' && <InventoryTable inventory={inventory} />}
+        {activeView === 'lowStock' && <LowStockAlerts lowStockItems={lowStockItems} onCreateOrder={createOrderForLowStock} />}
+
 
         {/* --- Modals --- */}
         {/* New/Edit Order Modals */}

@@ -1,3 +1,3 @@
-// FIX: This file now re-exports from 'icons.tsx' to resolve a file casing conflict.
-// All icon definitions are now in 'icons.tsx', and all imports should point there.
-export * from './icons';
+// This file is intentionally left blank to resolve a build-time file casing conflict
+// between 'icons.tsx' and 'Icons.tsx'. All icon imports should point to the lowercase
+// 'icons.tsx' file.
