@@ -19,7 +19,7 @@ import RejectionModal from './RejectionModal';
 import NewPurchaseIntentForm from './NewPurchaseIntentForm';
 import PurchaseIntentsTable from './PurchaseIntentsTable';
 // FIX: Standardized icon import path to use './Icons' to resolve file casing conflicts.
-import { PlusIcon, AlertTriangleIcon, CheckCircleIcon, InformationCircleIcon, ClipboardDocumentListIcon, ArchiveBoxIcon, Squares2X2Icon, ChartBarIcon, XMarkIcon, BuildingOfficeIcon, ReceiptRefundIcon, ArrowLeftStartOnRectangleIcon, DocumentPlusIcon, ClipboardDocumentCheckIcon } from './Icons';
+import { PlusIcon, AlertTriangleIcon, CheckCircleIcon, InformationCircleIcon, ClipboardDocumentListIcon, ArchiveBoxIcon, Squares2X2Icon, ChartBarIcon, XMarkIcon, BuildingOfficeIcon, ReceiptRefundIcon, ArrowLeftStartOnRectangleIcon, DocumentPlusIcon, ClipboardDocumentCheckIcon } from './Icons.tsx';
 import Reports from './Reports';
 import LowStockAlerts from './LowStockAlerts';
 
