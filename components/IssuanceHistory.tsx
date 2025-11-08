@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { MaterialIssuance, Site, Material } from '../types';
-// FIX: Standardized icon import path to use './Icons' to resolve file casing conflicts.
-import { MagnifyingGlassIcon } from './Icons.tsx';
+// FIX: Standardized icon import path to use './icons.tsx' to resolve file casing conflicts.
+import { MagnifyingGlassIcon } from './icons.tsx';
 
 interface IssuanceHistoryProps {
     issuances: MaterialIssuance[];

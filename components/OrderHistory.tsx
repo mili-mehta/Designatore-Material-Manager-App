@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { PurchaseOrder, Vendor, OrderStatus, Material } from '../types';
-// FIX: Standardized icon import path to use './Icons' to resolve file casing conflicts.
-import { MagnifyingGlassIcon } from './Icons.tsx';
+// FIX: Standardized icon import path to use './icons.tsx' to resolve file casing conflicts.
+import { MagnifyingGlassIcon } from './icons.tsx';
 
 interface OrderHistoryProps {
     orders: PurchaseOrder[];
