@@ -2,8 +2,8 @@
 
 import React from 'react';
 import { InventoryItem } from '../types';
-// FIX: Standardized icon import path to use './icons' (lowercase) to resolve file casing conflicts.
-import { AlertTriangleIcon } from './icons';
+// FIX: Standardized icon import path to use './Icons' to resolve file casing conflicts.
+import { AlertTriangleIcon } from './Icons';
 
 interface InventoryTableProps {
   inventory: InventoryItem[];
