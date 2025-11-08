@@ -1,8 +1,7 @@
 
-
 import React, { useState, useEffect } from 'react';
 import { Material, PurchaseOrder } from '../types';
-// FIX: Updated icon import path to use './Icons' to resolve file casing conflicts.
+// FIX: Standardized icon import path to use './Icons' to resolve file casing conflicts.
 import { PencilIcon, TrashIcon } from './Icons';
 import Modal from './Modal';
 import { UNITS } from '../constants';

@@ -1,15 +1,8 @@
 
-
-
-
-
-
-
-
 import React, { useState } from 'react';
 import { Material, PurchaseIntent, User, Site, PurchaseIntentLineItem } from '../types';
 import { UNITS } from '../constants';
-// FIX: Updated icon import path to use './Icons' to resolve file casing conflicts.
+// FIX: Standardized icon import path to use './Icons' to resolve file casing conflicts.
 import { PlusIcon, TrashIcon } from './Icons';
 
 interface NewPurchaseIntentFormProps {

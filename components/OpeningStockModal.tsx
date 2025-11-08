@@ -1,11 +1,10 @@
 
-
 import React, { useState, useEffect } from 'react';
 import { Material, InventoryItem } from '../types';
 import Modal from './Modal';
 import { translations } from '../translations';
 import { UNITS } from '../constants';
-// FIX: Updated icon import path to use './Icons' to resolve file casing conflicts.
+// FIX: Standardized icon import path to use './Icons' to resolve file casing conflicts.
 import { PlusIcon, TrashIcon } from './Icons';
 import ExcelUpload from './ExcelUpload';
 
