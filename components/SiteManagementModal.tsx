@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Site, PurchaseOrder } from '../types';
-// FIX: Standardized icon import path to use './icons.tsx' to resolve file casing conflicts.
-import { PencilIcon, TrashIcon } from './icons.tsx';
+import { PencilIcon, TrashIcon } from './Icons';
 import Modal from './Modal';
 import ExcelUpload from './ExcelUpload';
 

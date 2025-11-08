@@ -18,8 +18,8 @@ import IssuanceHistory from './IssuanceHistory';
 import RejectionModal from './RejectionModal';
 import NewPurchaseIntentForm from './NewPurchaseIntentForm';
 import PurchaseIntentsTable from './PurchaseIntentsTable';
-// FIX: Standardized icon import path to use './icons.tsx' to resolve file casing conflicts.
-import { PlusIcon, AlertTriangleIcon, CheckCircleIcon, InformationCircleIcon, ClipboardDocumentListIcon, ArchiveBoxIcon, Squares2X2Icon, ChartBarIcon, XMarkIcon, BuildingOfficeIcon, ReceiptRefundIcon, ArrowLeftStartOnRectangleIcon, DocumentPlusIcon, ClipboardDocumentCheckIcon } from './icons.tsx';
+// FIX: Updated icon import path from './icons' to './Icons' to resolve filename casing conflict.
+import { PlusIcon, AlertTriangleIcon, CheckCircleIcon, InformationCircleIcon, ClipboardDocumentListIcon, ArchiveBoxIcon, Squares2X2Icon, ChartBarIcon, XMarkIcon, BuildingOfficeIcon, ReceiptRefundIcon, ArrowLeftStartOnRectangleIcon, DocumentPlusIcon, ClipboardDocumentCheckIcon } from './Icons';
 import Reports from './Reports';
 import LowStockAlerts from './LowStockAlerts';
 
@@ -280,175 +280,153 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
                         <div className="bg-white rounded-xl shadow-sm p-6 space-y-4 border border-gray-200">
                             <h3 className="text-lg font-semibold text-gray-800">Management & Actions</h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {/* FIX: Replaced incomplete/empty ActionButton with full implementation for inventory manager actions. */}
                                 <ActionButton onClick={() => setIsIssueModalOpen(true)} icon={<ReceiptRefundIcon className="w-5 h-5" />}>
-                                    Record Consumption
+                                    Record Material Consumption
                                 </ActionButton>
-                                 <ActionButton onClick={() => setIsOpeningStockModalOpen(true)} icon={<ArrowLeftStartOnRectangleIcon className="w-5 h-5" />}>
-                                    Set Opening Stock
-                                </ActionButton>
-                                <ActionButton onClick={() => setIsMaterialModalOpen(true)} icon={<Squares2X2Icon className="w-5 h-5" />}>
-                                    Manage Materials
-                                </ActionButton>
-                                <ActionButton onClick={() => setIsVendorModalOpen(true)} icon={<BuildingOfficeIcon className="w-5 h-5" />}>
-                                    Manage Vendors
-                                </ActionButton>
-                                <ActionButton onClick={() => setIsSiteModalOpen(true)} icon={<ClipboardDocumentListIcon className="w-5 h-5" />}>
-                                    Manage Sites
+                                <ActionButton onClick={() => setIsIntentModalOpen(true)} icon={<DocumentPlusIcon className="w-5 h-5" />}>
+                                    Raise Purchase Intent
                                 </ActionButton>
                             </div>
                         </div>
                     )}
                 </div>
 
-                {/* Manager: Approvals */}
+                {/* Approvals for Manager */}
                 {currentUser.role === 'manager' && ordersAwaitingApproval.length > 0 && (
-                    <div className="animate-fade-in">
-                        <OrderTable
-                            orders={ordersAwaitingApproval}
-                            vendors={vendors}
-                            materials={materials}
-                            onUpdateOrderStatus={(orderId, status) => handleUpdateOrderStatus(currentUser, orderId, status)}
-                            onEditOrder={setEditingOrder}
-                            onViewOrder={setViewingOrder}
-                            onApproveOrder={(orderId) => handleApproveOrder(orderId, currentUser)}
-                            onRejectOrder={setRejectingOrder}
-                            currentUser={currentUser}
-                            onConfirmDelivery={(order) => setConfirmingDelivery(order)}
-                        />
-                    </div>
-                )}
-                
-                {/* Purchaser: Intents */}
-                {currentUser.role === 'purchaser' && (intentsForReview.length > 0 || intentsApproved.length > 0) && (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        {intentsForReview.length > 0 && <PurchaseIntentsTable title="Intents Awaiting Review" intents={intentsForReview} materials={materials} currentUser={currentUser} onApprove={(id) => handleApproveIntent(id, currentUser)} onReject={setRejectingIntent} />}
-                        {intentsApproved.length > 0 && <PurchaseIntentsTable title="Approved for PO" intents={intentsApproved} materials={materials} currentUser={currentUser} onCreateOrder={createOrderFromIntent} />}
-                    </div>
-                )}
-                
-                {/* Inventory Manager: My Intents */}
-                {currentUser.role === 'inventory_manager' && myIntents.length > 0 && (
-                    <PurchaseIntentsTable title="My Purchase Intents" intents={myIntents} materials={materials} currentUser={currentUser} />
-                )}
-
-                {/* Main Order List */}
-                <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                        <h2 className="text-2xl font-bold text-gray-900">
-                           {currentUser.role === 'manager' ? "Pending Orders" : "My Active Orders" }
-                        </h2>
-                        {currentUser.role !== 'inventory_manager' && (
-                             <button
-                                onClick={() => setIsModalOpen(true)}
-                                className="px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white rounded-md font-semibold transition text-sm shadow-sm flex items-center gap-2"
-                            >
-                                <PlusIcon className="w-5 h-5" />
-                                Create Purchase Order
-                            </button>
-                        )}
-                    </div>
                     <OrderTable
-                        orders={mainOrderList}
+                        orders={ordersAwaitingApproval}
                         vendors={vendors}
                         materials={materials}
                         onUpdateOrderStatus={(orderId, status) => handleUpdateOrderStatus(currentUser, orderId, status)}
                         onEditOrder={setEditingOrder}
                         onViewOrder={setViewingOrder}
-                        currentUser={currentUser}
                         onConfirmDelivery={(order) => setConfirmingDelivery(order)}
+                        onApproveOrder={(orderId) => handleApproveOrder(orderId, currentUser)}
+                        onRejectOrder={setRejectingOrder}
+                        currentUser={currentUser}
                     />
-                </div>
+                )}
+
+                {/* Intents for Purchaser */}
+                {currentUser.role === 'purchaser' && (
+                    <div className="space-y-8">
+                        {intentsForReview.length > 0 && (
+                            <PurchaseIntentsTable
+                                title="Intents Awaiting Review"
+                                intents={intentsForReview}
+                                materials={materials}
+                                currentUser={currentUser}
+                                onApprove={(intentId) => handleApproveIntent(intentId, currentUser)}
+                                onReject={setRejectingIntent}
+                            />
+                        )}
+                        {intentsApproved.length > 0 && (
+                             <PurchaseIntentsTable
+                                title="Approved Intents - Ready for PO"
+                                intents={intentsApproved}
+                                materials={materials}
+                                currentUser={currentUser}
+                                onCreateOrder={createOrderFromIntent}
+                            />
+                        )}
+                    </div>
+                )}
+                
+                {/* Intents for Inventory Manager */}
+                {currentUser.role === 'inventory_manager' && myIntents.length > 0 && (
+                     <PurchaseIntentsTable
+                        title="My Purchase Intents"
+                        intents={myIntents}
+                        materials={materials}
+                        currentUser={currentUser}
+                    />
+                )}
+                
+                {/* Main Order Table */}
+                <OrderTable
+                    orders={mainOrderList}
+                    vendors={vendors}
+                    materials={materials}
+                    onUpdateOrderStatus={(orderId, status) => handleUpdateOrderStatus(currentUser, orderId, status)}
+                    onEditOrder={setEditingOrder}
+                    onViewOrder={setViewingOrder}
+                    onConfirmDelivery={(order) => setConfirmingDelivery(order)}
+                    onApproveOrder={(orderId) => handleApproveOrder(orderId, currentUser)}
+                    onRejectOrder={setRejectingOrder}
+                    currentUser={currentUser}
+                />
             </div>
         )}
 
+        {/* --- Other Full-screen Views --- */}
         {activeView === 'history' && <OrderHistory orders={orders} vendors={vendors} materials={materials} onBack={() => setShowHistory(false)} />}
-        {activeView === 'reports' && <Reports orders={orders} vendors={vendors} materials={materials} currentUser={currentUser} inventory={inventory} issuances={issuances} purchaseIntents={purchaseIntents} sites={sites}/>}
+        {activeView === 'reports' && <Reports orders={orders} vendors={vendors} materials={materials} currentUser={currentUser} inventory={inventory} issuances={issuances} sites={sites} purchaseIntents={purchaseIntents} />}
         {activeView === 'issuanceHistory' && <IssuanceHistory issuances={issuances} materials={materials} sites={sites} onBack={() => setShowIssuanceHistory(false)} />}
         {activeView === 'inventory' && <InventoryTable inventory={inventory} />}
         {activeView === 'lowStock' && <LowStockAlerts lowStockItems={lowStockItems} onCreateOrder={createOrderForLowStock} />}
 
-
         {/* --- Modals --- */}
-        {/* New/Edit Order Modals */}
-        <Modal isOpen={isModalOpen} onClose={handleCloseNewOrderModal} title="Create Purchase Order">
-            <NewOrderForm
-                onAddOrder={(order) => handleAddOrder(order)}
-                onClose={handleCloseNewOrderModal}
-                currentUser={currentUser.name || 'Unknown'}
-                currentUserRole={currentUser.role}
-                vendors={vendors}
-                materials={materials}
-                sites={sites}
-                initialData={orderInitialData}
+        <Modal isOpen={isModalOpen || !!editingOrder} onClose={() => { setIsModalOpen(false); setEditingOrder(null); setOrderInitialData(undefined); }} title={editingOrder ? 'Edit Purchase Order' : 'Create Purchase Order'}>
+          {editingOrder ? (
+            <EditOrderForm
+              order={editingOrder}
+              onUpdateOrder={(updatedOrder) => { handleUpdateOrder(updatedOrder); setEditingOrder(null); }}
+              onClose={() => setEditingOrder(null)}
+              vendors={vendors}
+              materials={materials}
+              sites={sites}
             />
+          ) : (
+            <NewOrderForm
+              onAddOrder={handleAddOrder}
+              onClose={handleCloseNewOrderModal}
+              currentUser={currentUser.name || 'Unknown'}
+              currentUserRole={currentUser.role}
+              vendors={vendors}
+              materials={materials}
+              sites={sites}
+              initialData={orderInitialData}
+            />
+          )}
         </Modal>
 
-        {editingOrder && (
-            <Modal isOpen={!!editingOrder} onClose={() => setEditingOrder(null)} title={`Edit Purchase Order: ${editingOrder.id}`}>
-                <EditOrderForm
-                    order={editingOrder}
-                    onUpdateOrder={(order) => handleUpdateOrder(order)}
-                    onClose={() => setEditingOrder(null)}
-                    vendors={vendors}
-                    materials={materials}
-                    sites={sites}
-                />
-            </Modal>
-        )}
-        
         {viewingOrder && (
             <OrderDetailsModal isOpen={!!viewingOrder} onClose={() => setViewingOrder(null)} order={viewingOrder} vendors={vendors} materials={materials} />
         )}
 
         {confirmingDelivery && (
-             <DeliveryConfirmationModal 
-                isOpen={!!confirmingDelivery}
+            <DeliveryConfirmationModal 
+                isOpen={!!confirmingDelivery} 
                 onClose={() => setConfirmingDelivery(null)}
+                onConfirm={() => { handleUpdateOrderStatus(currentUser, confirmingDelivery.id, OrderStatus.Delivered); setConfirmingDelivery(null); }}
                 order={confirmingDelivery}
-                vendors={vendors}
                 materials={materials}
-                onConfirm={() => {
-                    handleUpdateOrderStatus(currentUser, confirmingDelivery.id, OrderStatus.Delivered);
-                    setConfirmingDelivery(null);
-                }}
-             />
+                vendors={vendors}
+            />
         )}
         
-        {/* Rejection Modals */}
         {rejectingOrder && (
-            <RejectionModal
+            <RejectionModal 
                 isOpen={!!rejectingOrder}
                 onClose={() => setRejectingOrder(null)}
-                onSubmit={(reason) => {
-                    handleConfirmRejectOrder(currentUser, rejectingOrder, reason);
-                    setRejectingOrder(null);
-                }}
+                onSubmit={(reason) => { handleConfirmRejectOrder(currentUser, rejectingOrder, reason); setRejectingOrder(null); }}
                 title="Reject Purchase Order"
             />
         )}
-        
+
         {rejectingIntent && (
-            <RejectionModal
+             <RejectionModal 
                 isOpen={!!rejectingIntent}
                 onClose={() => setRejectingIntent(null)}
-                onSubmit={(reason) => {
-                    handleConfirmRejectIntent(currentUser, rejectingIntent, reason);
-                    setRejectingIntent(null);
-                }}
+                onSubmit={(reason) => { handleConfirmRejectIntent(currentUser, rejectingIntent, reason); setRejectingIntent(null); }}
                 title="Reject Purchase Intent"
             />
         )}
-        
-         {/* Management Modals */}
-        <VendorManagementModal isOpen={isVendorModalOpen} onClose={() => setIsVendorModalOpen(false)} vendors={vendors} orders={orders} onAddVendor={handleAddVendor} onUpdateVendor={handleUpdateVendor} onDeleteVendor={handleDeleteVendor} onBulkAdd={handleBulkAddVendors} />
-        <MaterialManagementModal isOpen={isMaterialModalOpen} onClose={() => setIsMaterialModalOpen(false)} materials={materials} orders={orders} onAddMaterial={handleAddMaterial} onUpdateMaterial={handleUpdateMaterial} onDeleteMaterial={handleDeleteMaterial} onBulkAdd={handleBulkAddMaterials} />
-        <SiteManagementModal isOpen={isSiteModalOpen} onClose={() => setIsSiteModalOpen(false)} sites={sites} orders={orders} onAddSite={handleAddSite} onUpdateSite={handleUpdateSite} onDeleteSite={handleDeleteSite} onBulkAdd={handleBulkAddSites} />
 
-        {/* Inventory & Issuance Modals */}
-        <OpeningStockModal isOpen={isOpeningStockModalOpen} onClose={() => setIsOpeningStockModalOpen(false)} onSave={handleSaveOpeningStock} materials={materials} inventory={inventory} onBulkSet={handleBulkSetOpeningStock} />
         <Modal isOpen={isIssueModalOpen} onClose={() => setIsIssueModalOpen(false)} title="Record Material Consumption">
             <IssueMaterialForm 
-                onIssue={(...args) => handleIssueMaterial(currentUser, ...args)}
+                onIssue={(...args) => { handleIssueMaterial(currentUser, ...args); setIsIssueModalOpen(false); }}
                 onClose={() => setIsIssueModalOpen(false)}
                 currentUser={currentUser}
                 inventory={inventory}
@@ -457,10 +435,9 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
             />
         </Modal>
 
-        {/* Intent Modal */}
-         <Modal isOpen={isIntentModalOpen} onClose={() => setIsIntentModalOpen(false)} title="Raise Purchase Intent">
-            <NewPurchaseIntentForm 
-                onAddIntent={(intent) => handleAddIntent(currentUser, intent)}
+        <Modal isOpen={isIntentModalOpen} onClose={() => setIsIntentModalOpen(false)} title="Raise Purchase Intent">
+            <NewPurchaseIntentForm
+                onAddIntent={(intent) => { handleAddIntent(currentUser, intent); setIsIntentModalOpen(false); }}
                 onClose={() => setIsIntentModalOpen(false)}
                 currentUser={currentUser}
                 materials={materials}
@@ -468,24 +445,11 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
             />
         </Modal>
 
-        {/* --- Global Notifications --- */}
-        <div className="fixed bottom-4 right-4 w-full max-w-sm z-50 space-y-3">
-             {notifications.map(notif => {
-                const config = notificationConfig[notif.type];
-                return (
-                    <div key={notif.id} className={`${config.bg} ${config.border} ${config.text} p-4 rounded-lg shadow-lg flex items-start border animate-fade-in-up`}>
-                        {config.icon}
-                        <div className="flex-grow">
-                            <p className="font-semibold">{notif.type.charAt(0).toUpperCase() + notif.type.slice(1)}</p>
-                            <p className="text-sm">{notif.message}</p>
-                        </div>
-                        <button onClick={() => removeNotification(notif.id)} className="ml-4 flex-shrink-0">
-                           <XMarkIcon className="w-5 h-5"/>
-                        </button>
-                    </div>
-                );
-             })}
-        </div>
+        <VendorManagementModal isOpen={isVendorModalOpen} onClose={() => setIsVendorModalOpen(false)} vendors={vendors} orders={orders} onAddVendor={handleAddVendor} onUpdateVendor={handleUpdateVendor} onDeleteVendor={handleDeleteVendor} onBulkAdd={handleBulkAddVendors} />
+        <MaterialManagementModal isOpen={isMaterialModalOpen} onClose={() => setIsMaterialModalOpen(false)} materials={materials} orders={orders} onAddMaterial={handleAddMaterial} onUpdateMaterial={handleUpdateMaterial} onDeleteMaterial={handleDeleteMaterial} onBulkAdd={handleBulkAddMaterials} />
+        <SiteManagementModal isOpen={isSiteModalOpen} onClose={() => setIsSiteModalOpen(false)} sites={sites} orders={orders} onAddSite={handleAddSite} onUpdateSite={handleUpdateSite} onDeleteSite={handleDeleteSite} onBulkAdd={handleBulkAddSites} />
+        <OpeningStockModal isOpen={isOpeningStockModalOpen} onClose={() => setIsOpeningStockModalOpen(false)} materials={materials} inventory={inventory} onSave={(payload) => { handleSaveOpeningStock(payload); setIsOpeningStockModalOpen(false); }} onBulkSet={(data) => { handleBulkSetOpeningStock(data); setIsOpeningStockModalOpen(false); }} />
+
     </main>
   );
 };

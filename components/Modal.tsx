@@ -1,6 +1,6 @@
 import React, { ReactNode } from 'react';
-// FIX: Standardized icon import path to use './icons.tsx' to resolve file casing conflicts.
-import { XMarkIcon } from './icons.tsx';
+// FIX: Updated icon import path from './icons' to './Icons' to resolve filename casing conflict.
+import { XMarkIcon } from './Icons';
 
 interface ModalProps {
   isOpen: boolean;
