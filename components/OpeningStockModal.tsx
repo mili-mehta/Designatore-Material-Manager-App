@@ -7,8 +7,8 @@ import { Material, InventoryItem } from '../types';
 import Modal from './Modal';
 import { translations } from '../translations';
 import { UNITS } from '../constants';
-// FIX: Standardized icon import path to use './Icons' to resolve file casing conflicts.
-import { PlusIcon, TrashIcon } from './Icons';
+// FIX: Standardized icon import path to use './icons' to resolve file casing conflicts.
+import { PlusIcon, TrashIcon } from './icons';
 import ExcelUpload from './ExcelUpload';
 
 // A simple i18n helper
