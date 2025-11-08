@@ -1,6 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { read, utils, WorkBook } from 'xlsx';
-import { ArrowUpTrayIcon, CheckCircleIcon, XMarkIcon } from './icons';
+// FIX: Standardized icon import path to './Icons' (PascalCase) to resolve filename casing conflict.
+import { ArrowUpTrayIcon, CheckCircleIcon, XMarkIcon } from './Icons';
 
 interface ExcelUploadProps<T> {
   onDataParsed: (data: T[]) => void;

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { PurchaseOrder, Vendor, Priority, OrderLineItem, Material, Site } from '../types';
 import { UNITS } from '../constants';
-import { PlusIcon, TrashIcon } from './icons';
+// FIX: Standardized icon import path to './Icons' (PascalCase) to resolve filename casing conflict.
+import { PlusIcon, TrashIcon } from './Icons';
 
 interface EditOrderFormProps {
   order: PurchaseOrder;
@@ -63,16 +64,23 @@ const EditOrderForm: React.FC<EditOrderFormProps> = ({ order, onUpdateOrder, onC
       return;
     }
     
-    const finalLineItems = lineItems.filter(item => item.materialId && item.quantity && item.rate).map(item => ({
-        ...item,
-        id: item.id || `LI-${Date.now()}-${Math.random()}`,
-        materialId: item.materialId as string,
-        quantity: Number(item.quantity),
-        rate: Number(item.rate),
-        discount: item.discount ? Number(item.discount) : undefined,
-        gst: Number(item.gst || 18),
-        freight: item.freight ? Number(item.freight) : undefined,
-    })) as OrderLineItem[];
+    const finalLineItems: OrderLineItem[] = lineItems
+        .filter(item => item.materialId && item.quantity && item.rate && item.unit)
+        .map(item => ({
+            id: item.id || `LI-${Date.now()}-${Math.random()}`,
+            orderId: order.id,
+            materialId: item.materialId!,
+            specifications: item.specifications || '',
+            quantity: Number(item.quantity!),
+            size: item.size,
+            unit: item.unit!,
+            brand: item.brand,
+            site: item.site,
+            rate: Number(item.rate!),
+            discount: item.discount ? Number(item.discount) : undefined,
+            gst: Number(item.gst || 18),
+            freight: item.freight ? Number(item.freight) : undefined,
+        }));
 
     if (finalLineItems.length === 0) {
         alert("Please add at least one valid material item to the order.");

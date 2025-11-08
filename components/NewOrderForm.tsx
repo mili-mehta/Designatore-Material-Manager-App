@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { PurchaseOrder, Vendor, Priority, OrderStatus, OrderLineItem, Material, Site, User } from '../types';
 import { UNITS } from '../constants';
-// FIX: Updated icon import path from './Icons' to './icons' to resolve filename casing conflict.
-import { PlusIcon, TrashIcon } from './icons';
+// FIX: Standardized icon import path to './Icons' (PascalCase) to resolve filename casing conflict.
+import { PlusIcon, TrashIcon } from './Icons';
 
 interface NewOrderFormProps {
   onAddOrder: (order: Omit<PurchaseOrder, 'id'>) => void;
@@ -75,16 +75,22 @@ const NewOrderForm: React.FC<NewOrderFormProps> = ({ onAddOrder, onClose, curren
       return;
     }
     
-    const finalLineItems = lineItems.filter(item => item.materialId && item.quantity && item.rate).map(item => ({
-        ...item,
-        id: `LI-${Date.now()}-${Math.random()}`,
-        materialId: item.materialId as string,
-        quantity: Number(item.quantity),
-        rate: Number(item.rate),
-        discount: item.discount ? Number(item.discount) : undefined,
-        gst: Number(item.gst || 18),
-        freight: item.freight ? Number(item.freight) : undefined,
-    })) as OrderLineItem[];
+    const finalLineItems: OrderLineItem[] = lineItems
+        .filter(item => item.materialId && item.quantity && item.rate && item.unit)
+        .map(item => ({
+            id: `LI-${Date.now()}-${Math.random()}`,
+            materialId: item.materialId!,
+            specifications: item.specifications || '',
+            quantity: Number(item.quantity!),
+            size: item.size,
+            unit: item.unit!,
+            brand: item.brand,
+            site: item.site,
+            rate: Number(item.rate!),
+            discount: item.discount ? Number(item.discount) : undefined,
+            gst: Number(item.gst || 18),
+            freight: item.freight ? Number(item.freight) : undefined,
+        }));
 
     if (finalLineItems.length === 0) {
         alert("Please add at least one valid material item to the order.");
