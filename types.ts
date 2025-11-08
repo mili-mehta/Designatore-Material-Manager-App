@@ -35,14 +35,6 @@ export interface Material {
   id: string;
   name: string;
   unit: string;
-  // FIX: Added optional properties to match usage in MaterialCard.tsx
-  description?: string;
-  properties?: {
-    sustainability: string;
-    durability: string;
-    cost: string;
-  };
-  commonUses?: string[];
 }
 
 export interface Site {

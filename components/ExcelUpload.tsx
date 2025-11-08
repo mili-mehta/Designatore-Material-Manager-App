@@ -41,11 +41,12 @@ const ExcelUpload = <T extends unknown>({ onDataParsed, title, instructions }: E
       const jsonData = utils.sheet_to_json(worksheet);
 
       // Normalize keys to lowercase to handle variations in Excel column headers (e.g., 'Name' vs 'name')
-      const normalizedData = jsonData.map(row => {
+      // FIX: Explicitly type 'row' as 'any' to resolve TypeScript error when using 'for...in'.
+      const normalizedData = jsonData.map((row: any) => {
           const newRow: { [key: string]: any } = {};
           for (const key in row) {
               if (Object.prototype.hasOwnProperty.call(row, key)) {
-                newRow[key.toLowerCase()] = (row as any)[key];
+                newRow[key.toLowerCase()] = row[key];
               }
           }
           return newRow;
