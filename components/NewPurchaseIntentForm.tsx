@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Material, PurchaseIntent, User, Site, PurchaseIntentLineItem } from '../types';
 import { UNITS } from '../constants';
-// FIX: Standardized icon import path to './Icons' (PascalCase) to resolve filename casing conflict.
-import { PlusIcon, TrashIcon } from './Icons';
+// FIX: Changed icon import path from './Icons' to './icons' to resolve filename casing conflict.
+import { PlusIcon, TrashIcon } from './icons';
 
 interface NewPurchaseIntentFormProps {
   onAddIntent: (intent: Omit<PurchaseIntent, 'id' | 'requestedOn' | 'status'>) => void;

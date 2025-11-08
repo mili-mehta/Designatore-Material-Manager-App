@@ -49,7 +49,7 @@ const AppContext = createContext<AppContextState | undefined>(undefined);
 const toCamelCase = (obj: any) => {
     if (Array.isArray(obj)) {
         return obj.map(v => toCamelCase(v));
-    } else if (obj !== null && obj.constructor === Object) {
+    } else if (obj && obj.constructor === Object) {
         return Object.keys(obj).reduce(
             (result, key) => ({
                 ...result,
@@ -65,7 +65,7 @@ const toCamelCase = (obj: any) => {
 const toSnakeCase = (obj: any) => {
     if (Array.isArray(obj)) {
         return obj.map(v => toSnakeCase(v));
-    } else if (obj !== null && obj.constructor === Object) {
+    } else if (obj && obj.constructor === Object) {
         return Object.keys(obj).reduce(
             (result, key) => ({
                 ...result,
