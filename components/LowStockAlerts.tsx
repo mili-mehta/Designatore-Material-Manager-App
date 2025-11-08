@@ -1,6 +1,7 @@
 import React from 'react';
 import { InventoryItem } from '../types';
-import { PlusIcon, CheckCircleIcon } from './icons';
+// FIX: Updated icon import path to use './Icons' to resolve file casing conflicts.
+import { PlusIcon, CheckCircleIcon } from './Icons';
 
 interface LowStockAlertsProps {
   lowStockItems: InventoryItem[];

@@ -1,8 +1,9 @@
 
+
 import React, { useState } from 'react';
 import { PurchaseOrder, OrderStatus, Priority, Vendor, Material, User } from '../types';
-// FIX: Standardized icon import path to use './icons' to resolve file casing conflicts in the build system.
-import { CheckCircleIcon, MagnifyingGlassIcon, PencilIcon, TrashIcon, HandThumbUpIcon, HandThumbDownIcon } from './icons';
+// FIX: Updated icon import path to use './Icons' to resolve file casing conflicts.
+import { CheckCircleIcon, MagnifyingGlassIcon, PencilIcon, TrashIcon, HandThumbUpIcon, HandThumbDownIcon } from './Icons';
 
 interface OrderTableProps {
   orders: PurchaseOrder[];

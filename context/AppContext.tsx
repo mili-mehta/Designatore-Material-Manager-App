@@ -38,7 +38,7 @@ interface AppContextState {
     handleApproveIntent: (intentId: string, currentUser: User) => void;
     handleConfirmRejectIntent: (currentUser: User, rejectingIntent: PurchaseIntent, reason: string) => void;
     handleCreateOrderFromIntent: (intent: PurchaseIntent) => { initialData: Partial<PurchaseOrder>, updatedIntent: PurchaseIntent };
-    handleSaveOpeningStock: (payload: { updatedStocks: { materialId: string, quantity: number }[], newItems: { name: string, unit: string, quantity: number }[] }) => void;
+    handleSaveOpeningStock: (payload: { updatedStocks: { materialId: string; quantity: number }[], newItems: { name: string, unit: string, quantity: number }[] }) => void;
     handleBulkSetOpeningStock: (data: { name: string, unit: string, quantity: number, threshold: number }[]) => void;
 }
 
@@ -574,9 +574,48 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         loadData();
     };
 
+    const sortedMaterials = useMemo(() => [...materials].sort((a, b) => a.name.localeCompare(b.name)), [materials]);
+    const sortedVendors = useMemo(() => [...vendors].sort((a, b) => a.name.localeCompare(b.name)), [vendors]);
+    const sortedSites = useMemo(() => [...sites].sort((a, b) => a.name.localeCompare(b.name)), [sites]);
+    const sortedInventory = useMemo(() => [...inventory].sort((a, b) => a.name.localeCompare(b.name)), [inventory]);
+
     const contextValue = useMemo(() => ({
-        inventory, orders, vendors, materials, sites, issuances, purchaseIntents, isLoading, notifications, addNotification, removeNotification, handleAddOrder, handleUpdateOrder, handleApproveOrder, handleConfirmRejectOrder, handleUpdateOrderStatus, handleIssueMaterial, handleAddVendor, handleUpdateVendor, handleDeleteVendor, handleBulkAddVendors, handleAddMaterial, handleUpdateMaterial, handleDeleteMaterial, handleBulkAddMaterials, handleAddSite, handleUpdateSite, handleDeleteSite, handleBulkAddSites, handleAddIntent, handleApproveIntent, handleConfirmRejectIntent, handleCreateOrderFromIntent, handleSaveOpeningStock, handleBulkSetOpeningStock,
-    }), [inventory, orders, vendors, materials, sites, issuances, purchaseIntents, isLoading, notifications, loadData]);
+        inventory: sortedInventory, 
+        orders, 
+        vendors: sortedVendors, 
+        materials: sortedMaterials, 
+        sites: sortedSites, 
+        issuances, 
+        purchaseIntents, 
+        isLoading, 
+        notifications, 
+        addNotification, 
+        removeNotification, 
+        handleAddOrder, 
+        handleUpdateOrder, 
+        handleApproveOrder, 
+        handleConfirmRejectOrder, 
+        handleUpdateOrderStatus, 
+        handleIssueMaterial, 
+        handleAddVendor, 
+        handleUpdateVendor, 
+        handleDeleteVendor, 
+        handleBulkAddVendors, 
+        handleAddMaterial, 
+        handleUpdateMaterial, 
+        handleDeleteMaterial, 
+        handleBulkAddMaterials, 
+        handleAddSite, 
+        handleUpdateSite, 
+        handleDeleteSite, 
+        handleBulkAddSites, 
+        handleAddIntent, 
+        handleApproveIntent, 
+        handleConfirmRejectIntent, 
+        handleCreateOrderFromIntent, 
+        handleSaveOpeningStock, 
+        handleBulkSetOpeningStock,
+    }), [sortedInventory, orders, sortedVendors, sortedMaterials, sortedSites, issuances, purchaseIntents, isLoading, notifications, loadData]);
 
     return (
         <AppContext.Provider value={contextValue}>
