@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
-import * as XLSX from 'xlsx';
-// FIX: Corrected icon import path to resolve file casing issue.
+import { read, utils, WorkBook } from 'xlsx';
+// FIX: Standardized icon import path to use './Icons' to resolve file casing conflicts in the build system.
 import { ArrowUpTrayIcon, CheckCircleIcon, XMarkIcon } from './Icons';
 
 interface ExcelUploadProps<T> {
@@ -23,12 +23,22 @@ const ExcelUpload = <T extends unknown>({ onDataParsed, title, instructions }: E
     setIsProcessing(true);
     setError(null);
 
+    const isBinaryFormat = file.name.endsWith('.xlsx') || file.name.endsWith('.xls') || file.name.endsWith('.xlsb');
+
     try {
-      const data = await file.arrayBuffer();
-      const workbook = XLSX.read(data);
+      let workbook: WorkBook;
+      
+      if (isBinaryFormat) {
+          const data = await file.arrayBuffer();
+          workbook = read(data);
+      } else { // Assume CSV or other text format
+          const text = await file.text();
+          workbook = read(text, { type: 'string' });
+      }
+      
       const sheetName = workbook.SheetNames[0];
       const worksheet = workbook.Sheets[sheetName];
-      const jsonData = XLSX.utils.sheet_to_json(worksheet);
+      const jsonData = utils.sheet_to_json(worksheet);
 
       // Normalize keys to lowercase to handle variations in Excel column headers (e.g., 'Name' vs 'name')
       const normalizedData = jsonData.map(row => {
@@ -43,7 +53,7 @@ const ExcelUpload = <T extends unknown>({ onDataParsed, title, instructions }: E
 
       onDataParsed(normalizedData);
     } catch (e) {
-      console.error("Error parsing Excel file:", e);
+      console.error("Error parsing Excel/CSV file:", e);
       setError("Failed to parse file. Please ensure it's a valid Excel or CSV file with the correct headers.");
     } finally {
       setIsProcessing(false);

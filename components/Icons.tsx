@@ -1,6 +1,7 @@
 import React from 'react';
 
-// FIX: Consolidated all icon definitions into this file to resolve persistent module resolution and file casing issues.
+// FIX: Consolidated all icon definitions into this single file (Icons.tsx) to resolve file casing conflicts.
+// All icon imports should point to this file.
 export const SearchIcon = ({ className }: { className?: string }) => (
   <svg
     xmlns="http://www.w3.org/2000/svg"

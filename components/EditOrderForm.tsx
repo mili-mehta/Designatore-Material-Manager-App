@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { PurchaseOrder, Vendor, Priority, OrderLineItem, Material, Site } from '../types';
 import { UNITS } from '../constants';
-// FIX: Corrected icon import path to resolve file casing issue.
+// FIX: Standardized icon import path to use './Icons' to resolve file casing conflicts in the build system.
 import { PlusIcon, TrashIcon } from './Icons';
 
 interface EditOrderFormProps {

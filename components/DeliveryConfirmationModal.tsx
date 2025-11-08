@@ -2,7 +2,7 @@
 import React from 'react';
 import { PurchaseOrder, Material, Vendor } from '../types';
 import Modal from './Modal';
-// FIX: Corrected icon import path to resolve file casing issue.
+// FIX: Standardized icon import path to use './Icons' to resolve file casing conflicts in the build system.
 import { CheckCircleIcon } from './Icons';
 
 interface DeliveryConfirmationModalProps {

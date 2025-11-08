@@ -343,9 +343,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const handleBulkAddVendors = async (data: { name: string }[]) => {
         const existingNames = new Set(vendors.map(v => v.name.toLowerCase()));
+        const seenInUpload = new Set<string>();
+
         const newVendors = data
-            .filter(v => v.name && !existingNames.has(v.name.toLowerCase()))
-            .map(v => ({ id: `V-${crypto.randomUUID()}`, name: v.name }));
+            .filter(v => {
+                if (!v.name || !v.name.trim()) return false;
+                const lowerCaseName = v.name.trim().toLowerCase();
+                if (existingNames.has(lowerCaseName) || seenInUpload.has(lowerCaseName)) {
+                    return false;
+                }
+                seenInUpload.add(lowerCaseName);
+                return true;
+            })
+            .map(v => ({ id: `V-${crypto.randomUUID()}`, name: v.name.trim() }));
 
         if (newVendors.length === 0) {
             addNotification('info', 'No new vendors to add. All names already exist or are empty.');
@@ -355,6 +365,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const { error } = await supabase.from('vendors').insert(toSnakeCase(newVendors));
         if (error) {
             addNotification('warning', 'Failed to bulk add vendors.');
+            console.error(error);
         } else {
             addNotification('success', `${newVendors.length} vendors added successfully.`);
             loadData();
@@ -387,9 +398,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const handleBulkAddMaterials = async (data: { name: string, unit: string }[]) => {
         const existingNames = new Set(materials.map(m => m.name.toLowerCase()));
+        const seenInUpload = new Set<string>();
+
         const newMaterials = data
-            .filter(m => m.name && m.unit && !existingNames.has(m.name.toLowerCase()))
-            .map(m => ({ id: `M-${crypto.randomUUID()}`, name: m.name, unit: m.unit }));
+            .filter(m => {
+                if (!m.name || !m.name.trim() || !m.unit) return false;
+                const lowerCaseName = m.name.trim().toLowerCase();
+                if (existingNames.has(lowerCaseName) || seenInUpload.has(lowerCaseName)) {
+                    return false;
+                }
+                seenInUpload.add(lowerCaseName);
+                return true;
+            })
+            .map(m => ({ id: `M-${crypto.randomUUID()}`, name: m.name.trim(), unit: m.unit }));
         
         if (newMaterials.length === 0) {
             addNotification('info', 'No new materials to add. All names already exist or data is incomplete.');
@@ -401,6 +422,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const { error: matError } = await supabase.from('materials').insert(toSnakeCase(newMaterials));
         if (matError) {
             addNotification('warning', 'Failed to bulk add materials.');
+            console.error(matError);
             return;
         }
         await supabase.from('inventory').insert(toSnakeCase(newInventoryItems));
@@ -430,9 +452,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const handleBulkAddSites = async (data: { name: string }[]) => {
         const existingNames = new Set(sites.map(s => s.name.toLowerCase()));
+        const seenInUpload = new Set<string>();
+
         const newSites = data
-            .filter(s => s.name && !existingNames.has(s.name.toLowerCase()))
-            .map(s => ({ id: `S-${crypto.randomUUID()}`, name: s.name }));
+            .filter(s => {
+                if (!s.name || !s.name.trim()) return false;
+                const lowerCaseName = s.name.trim().toLowerCase();
+                if (existingNames.has(lowerCaseName) || seenInUpload.has(lowerCaseName)) {
+                    return false;
+                }
+                seenInUpload.add(lowerCaseName);
+                return true;
+            })
+            .map(s => ({ id: `S-${crypto.randomUUID()}`, name: s.name.trim() }));
         
         if (newSites.length === 0) {
             addNotification('info', 'No new sites to add. All names already exist or are empty.');
@@ -442,6 +474,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const { error } = await supabase.from('sites').insert(toSnakeCase(newSites));
         if (error) {
             addNotification('warning', 'Failed to bulk add sites.');
+            console.error(error);
         } else {
             addNotification('success', `${newSites.length} sites added successfully.`);
             loadData();

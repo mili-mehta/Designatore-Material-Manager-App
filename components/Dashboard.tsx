@@ -18,83 +18,9 @@ import IssuanceHistory from './IssuanceHistory';
 import RejectionModal from './RejectionModal';
 import NewPurchaseIntentForm from './NewPurchaseIntentForm';
 import PurchaseIntentsTable from './PurchaseIntentsTable';
-// FIX: Corrected icon import path to resolve file casing issue.
+// FIX: Standardized icon import path to use './Icons' to resolve file casing conflicts in the build system.
 import { PlusIcon, AlertTriangleIcon, CheckCircleIcon, InformationCircleIcon, ClipboardDocumentListIcon, ArchiveBoxIcon, Squares2X2Icon, ChartBarIcon, XMarkIcon, BuildingOfficeIcon, ReceiptRefundIcon, ArrowLeftStartOnRectangleIcon, DocumentPlusIcon, ClipboardDocumentCheckIcon } from './Icons';
 import Reports from './Reports';
-import { generateMaterialSuggestions } from '../services/geminiService';
-import SearchBar from './SearchBar';
-import MaterialCard from './MaterialCard';
-import Loader from './Loader';
-
-// --- AI Material Suggester Component ---
-const AiMaterialSuggester: React.FC = () => {
-    const [isLoading, setIsLoading] = useState(false);
-    const [suggestions, setSuggestions] = useState<Material[]>([]);
-    const [error, setError] = useState<string | null>(null);
-    const [hasSearched, setHasSearched] = useState(false);
-
-    const handleSearch = async (query: string) => {
-        setIsLoading(true);
-        setError(null);
-        setSuggestions([]);
-        setHasSearched(true);
-        try {
-            const results = await generateMaterialSuggestions(query);
-            setSuggestions(results);
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'An unknown error occurred.');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    return (
-        <div className="bg-white rounded-xl shadow-sm p-6 md:p-8 space-y-6 border border-gray-200">
-            <div className="text-center max-w-3xl mx-auto">
-                <h2 className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tight">
-                    AI Material Suggester
-                </h2>
-                <p className="mt-2 text-gray-600">
-                    Describe your material needs, and our AI will provide expert suggestions for your next project.
-                </p>
-            </div>
-            
-            <SearchBar onSearch={handleSearch} isLoading={isLoading} />
-
-            {isLoading && (
-                <div className="pt-8 flex justify-center">
-                    <Loader />
-                </div>
-            )}
-
-            {error && (
-                <div className="pt-4 text-center text-red-600 bg-red-50 p-4 rounded-md">
-                    <p className="font-semibold">Oops! Something went wrong.</p>
-                    <p>{error}</p>
-                </div>
-            )}
-            
-            {suggestions.length > 0 && (
-                <div className="pt-6">
-                    <h3 className="text-xl font-semibold text-gray-800 mb-4">Suggested Materials</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {suggestions.map((material) => (
-                            <MaterialCard key={material.id} material={material} imageUrl={null} />
-                        ))}
-                    </div>
-                </div>
-            )}
-
-            {!isLoading && hasSearched && suggestions.length === 0 && !error && (
-                 <div className="pt-4 text-center text-gray-500">
-                    <p className="font-medium">No suggestions found.</p>
-                    <p className="text-sm">Try refining your search query for better results.</p>
-                </div>
-            )}
-
-        </div>
-    );
-};
 
 
 interface DashboardProps {
@@ -289,11 +215,6 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
         {/* --- Main Content Area --- */}
         {activeView === 'dashboard' && (
             <div className="space-y-8">
-                
-                {/* AI Suggester (Manager & Purchaser only) */}
-                {(currentUser.role === 'manager' || currentUser.role === 'purchaser') && (
-                    <AiMaterialSuggester />
-                )}
 
                 {/* Low Stock Alerts */}
                 {lowStockItems.length > 0 && currentUser.role !== 'inventory_manager' && (

@@ -54,10 +54,10 @@ export const generateMaterialSuggestions = async (query: string): Promise<Materi
         }
     });
 
-    const jsonText = response.text.trim();
-    // It's possible the response is wrapped in markdown, let's strip it.
-    const sanitizedJsonText = jsonText.replace(/^```json\s*|```$/g, '');
-    const suggestions: Omit<Material, 'id' | 'unit'>[] = JSON.parse(sanitizedJsonText);
+    // FIX: The response text is already a clean JSON string when responseSchema is used.
+    // Parsing it directly is the correct approach.
+    const jsonText = response.text;
+    const suggestions: Omit<Material, 'id' | 'unit'>[] = JSON.parse(jsonText);
     
     // Add a temporary unique ID and default unit for React keys and type compliance
     return suggestions.map(s => ({...s, id: `ai-${s.name}-${Math.random()}`, unit: 'units' }));

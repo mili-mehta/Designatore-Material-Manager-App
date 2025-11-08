@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Vendor, PurchaseOrder } from '../types';
-// FIX: Corrected icon import path to resolve file casing issue.
+// FIX: Standardized icon import path to use './Icons' to resolve file casing conflicts in the build system.
 import { PencilIcon, TrashIcon } from './Icons';
 import Modal from './Modal';
 import ExcelUpload from './ExcelUpload';
