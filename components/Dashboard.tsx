@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { AppNotification, Material, PurchaseOrder, User, OrderStatus, PurchaseIntent, PurchaseIntentStatus } from '../types';
 import { useAppContext } from '../context/AppContext';
@@ -18,8 +19,8 @@ import IssuanceHistory from './IssuanceHistory';
 import RejectionModal from './RejectionModal';
 import NewPurchaseIntentForm from './NewPurchaseIntentForm';
 import PurchaseIntentsTable from './PurchaseIntentsTable';
-// FIX: Standardized icon import path to use './Icons' to resolve file casing conflicts in the build system.
-import { PlusIcon, AlertTriangleIcon, CheckCircleIcon, InformationCircleIcon, ClipboardDocumentListIcon, ArchiveBoxIcon, Squares2X2Icon, ChartBarIcon, XMarkIcon, BuildingOfficeIcon, ReceiptRefundIcon, ArrowLeftStartOnRectangleIcon, DocumentPlusIcon, ClipboardDocumentCheckIcon } from './Icons';
+// FIX: Standardized icon import path to use './icons' to resolve file casing conflicts in the build system.
+import { PlusIcon, AlertTriangleIcon, CheckCircleIcon, InformationCircleIcon, ClipboardDocumentListIcon, ArchiveBoxIcon, Squares2X2Icon, ChartBarIcon, XMarkIcon, BuildingOfficeIcon, ReceiptRefundIcon, ArrowLeftStartOnRectangleIcon, DocumentPlusIcon, ClipboardDocumentCheckIcon } from './icons';
 import Reports from './Reports';
 
 

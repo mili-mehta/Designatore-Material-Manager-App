@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { Material, PurchaseOrder } from '../types';
-// FIX: Standardized icon import path to use './Icons' to resolve file casing conflicts in the build system.
-import { PencilIcon, TrashIcon } from './Icons';
+// FIX: Standardized icon import path to use './icons' to resolve file casing conflicts in the build system.
+import { PencilIcon, TrashIcon } from './icons';
 import Modal from './Modal';
 import { UNITS } from '../constants';
 import ExcelUpload from './ExcelUpload';
@@ -14,7 +15,7 @@ interface MaterialManagementModalProps {
   onAddMaterial: (name: string, unit: string) => void;
   onUpdateMaterial: (material: Material) => void;
   onDeleteMaterial: (materialId: string) => void;
-  onBulkAdd: (data: { name: string, unit: string }[]) => void;
+  onBulkAdd: (data: { name: string, unit?: string }[]) => void;
 }
 
 const MaterialManagementModal: React.FC<MaterialManagementModalProps> = ({
@@ -82,10 +83,10 @@ const MaterialManagementModal: React.FC<MaterialManagementModalProps> = ({
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Manage Materials">
         <div className="space-y-6">
-            <ExcelUpload<{ name: string, unit: string }>
+            <ExcelUpload<{ name: string, unit?: string }>
                 onDataParsed={onBulkAdd}
                 title="Bulk Upload Materials"
-                instructions="Upload an Excel file with column headers: <b>name</b>, <b>unit</b>."
+                instructions="Upload an Excel file with a header for <b>name</b>. A column for <b>unit</b> is optional (defaults to 'Nos.')."
             />
 
             {/* Add/Edit Form */}

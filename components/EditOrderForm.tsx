@@ -2,8 +2,8 @@
 import React, { useState } from 'react';
 import { PurchaseOrder, Vendor, Priority, OrderLineItem, Material, Site } from '../types';
 import { UNITS } from '../constants';
-// FIX: Standardized icon import path to use './Icons' to resolve file casing conflicts in the build system.
-import { PlusIcon, TrashIcon } from './Icons';
+// FIX: Standardized icon import path to use './icons' to resolve file casing conflicts in the build system.
+import { PlusIcon, TrashIcon } from './icons';
 
 interface EditOrderFormProps {
   order: PurchaseOrder;

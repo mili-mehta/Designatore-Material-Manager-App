@@ -1,8 +1,8 @@
 
 import React from 'react';
 import { PurchaseIntent, PurchaseIntentStatus, Material, User } from '../types';
-// FIX: Standardized icon import path to use './Icons' to resolve file casing conflicts in the build system.
-import { HandThumbUpIcon, HandThumbDownIcon, ArrowRightCircleIcon } from './Icons';
+// FIX: Standardized icon import path to use './icons' to resolve file casing conflicts in the build system.
+import { HandThumbUpIcon, HandThumbDownIcon, ArrowRightCircleIcon } from './icons';
 
 interface PurchaseIntentsTableProps {
   title: string;

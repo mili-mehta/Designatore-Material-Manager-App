@@ -29,7 +29,7 @@ interface AppContextState {
     handleAddMaterial: (name: string, unit: string) => void;
     handleUpdateMaterial: (mat: Material) => void;
     handleDeleteMaterial: (materialId: string) => void;
-    handleBulkAddMaterials: (data: { name: string, unit: string }[]) => void;
+    handleBulkAddMaterials: (data: { name: string, unit?: string }[]) => void;
     handleAddSite: (name: string) => void;
     handleUpdateSite: (site: Site) => void;
     handleDeleteSite: (siteId: string) => void;
@@ -195,7 +195,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             return;
         }
 
-        const lineItemsWithOrderId = lineItems.map(li => ({ ...li, orderId: orderId, id: `LI-${crypto.randomUUID()}` }));
+        const lineItemsWithOrderId = lineItems.map(li => ({ ...li, orderId: orderId, id: `LI-${Math.random().toString(36).slice(2)}` }));
         const { error: lineItemsError } = await supabase
             .from('order_line_items')
             .insert(toSnakeCase(lineItemsWithOrderId));
@@ -228,7 +228,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         
         // Easiest way to handle line item changes is to delete and re-insert
         await supabase.from('order_line_items').delete().eq('order_id', updatedOrder.id);
-        const lineItemsWithOrderId = lineItems.map(li => ({ ...li, orderId: updatedOrder.id, id: li.id || `LI-${crypto.randomUUID()}` }));
+        const lineItemsWithOrderId = lineItems.map(li => ({ ...li, orderId: updatedOrder.id, id: li.id || `LI-${Math.random().toString(36).slice(2)}` }));
         await supabase.from('order_line_items').insert(toSnakeCase(lineItemsWithOrderId));
 
         addNotification('success', `Order has been successfully updated.`);
@@ -323,7 +323,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     const handleAddVendor = async (name: string) => {
-        const newVendor = { id: `V-${crypto.randomUUID()}`, name };
+        const newVendor = { id: `V-${Math.random().toString(36).slice(2)}`, name };
         await supabase.from('vendors').insert(toSnakeCase([newVendor]));
         addNotification('success', 'Vendor added successfully.');
         loadData();
@@ -355,7 +355,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 seenInUpload.add(lowerCaseName);
                 return true;
             })
-            .map(v => ({ id: `V-${crypto.randomUUID()}`, name: v.name.trim() }));
+            .map(v => ({ id: `V-${Math.random().toString(36).slice(2)}`, name: v.name.trim() }));
 
         if (newVendors.length === 0) {
             addNotification('info', 'No new vendors to add. All names already exist or are empty.');
@@ -373,7 +373,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     
     const handleAddMaterial = async (name: string, unit: string) => {
-        const newMaterial = { id: `M-${crypto.randomUUID()}`, name, unit };
+        const newMaterial = { id: `M-${Math.random().toString(36).slice(2)}`, name, unit };
         const newInventoryItem = { materialId: newMaterial.id, quantity: 0, threshold: 10 };
 
         await supabase.from('materials').insert(toSnakeCase([newMaterial]));
@@ -396,13 +396,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         loadData();
     };
 
-    const handleBulkAddMaterials = async (data: { name: string, unit: string }[]) => {
+    const handleBulkAddMaterials = async (data: { name: string, unit?: string }[]) => {
         const existingNames = new Set(materials.map(m => m.name.toLowerCase()));
         const seenInUpload = new Set<string>();
 
         const newMaterials = data
             .filter(m => {
-                if (!m.name || !m.name.trim() || !m.unit) return false;
+                if (!m.name || !m.name.trim()) return false;
                 const lowerCaseName = m.name.trim().toLowerCase();
                 if (existingNames.has(lowerCaseName) || seenInUpload.has(lowerCaseName)) {
                     return false;
@@ -410,7 +410,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 seenInUpload.add(lowerCaseName);
                 return true;
             })
-            .map(m => ({ id: `M-${crypto.randomUUID()}`, name: m.name.trim(), unit: m.unit }));
+            .map(m => ({ id: `M-${Math.random().toString(36).slice(2)}`, name: m.name.trim(), unit: m.unit || 'Nos.' }));
         
         if (newMaterials.length === 0) {
             addNotification('info', 'No new materials to add. All names already exist or data is incomplete.');
@@ -432,7 +432,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     const handleAddSite = async (name: string) => {
-        const newSite = { id: `S-${crypto.randomUUID()}`, name };
+        const newSite = { id: `S-${Math.random().toString(36).slice(2)}`, name };
         await supabase.from('sites').insert(toSnakeCase([newSite]));
         addNotification('success', 'Site/Client added successfully.');
         loadData();
@@ -464,7 +464,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 seenInUpload.add(lowerCaseName);
                 return true;
             })
-            .map(s => ({ id: `S-${crypto.randomUUID()}`, name: s.name.trim() }));
+            .map(s => ({ id: `S-${Math.random().toString(36).slice(2)}`, name: s.name.trim() }));
         
         if (newSites.length === 0) {
             addNotification('info', 'No new sites to add. All names already exist or are empty.');
@@ -487,7 +487,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const newIntent = { ...intentData, id: intentId, requestedOn: new Date().toISOString().split('T')[0], status: PurchaseIntentStatus.Pending, requestedBy: currentUser.name || 'Unknown' };
 
         await supabase.from('purchase_intents').insert(toSnakeCase([newIntent]));
-        const lineItemsWithIntentId = lineItems.map(li => ({ ...li, intentId, id: `INTLI-${crypto.randomUUID()}` }));
+        const lineItemsWithIntentId = lineItems.map(li => ({ ...li, intentId, id: `INTLI-${Math.random().toString(36).slice(2)}` }));
         await supabase.from('purchase_intent_line_items').insert(toSnakeCase(lineItemsWithIntentId));
         
         addNotification('success', 'Purchase intent submitted successfully.');
@@ -523,7 +523,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const handleSaveOpeningStock = async ({ updatedStocks, newItems }: { updatedStocks: { materialId: string, quantity: number }[], newItems: { name: string, unit: string, quantity: number }[] }) => {
         
         if (newItems.length > 0) {
-            const materialsToAdd = newItems.map(item => ({ id: `M-${crypto.randomUUID()}`, name: item.name, unit: item.unit }));
+            const materialsToAdd = newItems.map(item => ({ id: `M-${Math.random().toString(36).slice(2)}`, name: item.name, unit: item.unit }));
             const inventoryToAdd = materialsToAdd.map((mat, i) => ({ material_id: mat.id, quantity: newItems[i].quantity, threshold: 10 }));
             await supabase.from('materials').insert(toSnakeCase(materialsToAdd));
             await supabase.from('inventory').insert(inventoryToAdd);
@@ -552,7 +552,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             if (existingId) {
                 inventoryToUpsert.push({ material_id: existingId, quantity: item.quantity, threshold: item.threshold });
             } else {
-                const newId = `M-${crypto.randomUUID()}`;
+                const newId = `M-${Math.random().toString(36).slice(2)}`;
                 materialsToCreate.push({ id: newId, name: item.name, unit: item.unit || 'units' });
                 inventoryToUpsert.push({ material_id: newId, quantity: item.quantity, threshold: item.threshold });
             }
