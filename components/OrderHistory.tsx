@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { PurchaseOrder, Vendor, OrderStatus, Material } from '../types';
-import { MagnifyingGlassIcon } from './Icons';
+import { MagnifyingGlassIcon } from './icons';
 
 interface OrderHistoryProps {
     orders: PurchaseOrder[];

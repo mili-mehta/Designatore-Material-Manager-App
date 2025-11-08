@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { PurchaseOrder, Vendor, Priority, OrderLineItem, Material, Site } from '../types';
 import { UNITS } from '../constants';
-import { PlusIcon, TrashIcon } from './Icons';
+import { PlusIcon, TrashIcon } from './icons';
 
 interface EditOrderFormProps {
   order: PurchaseOrder;

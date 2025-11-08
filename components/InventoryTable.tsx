@@ -1,7 +1,7 @@
 import React from 'react';
 import { InventoryItem } from '../types';
-// FIX: Updated icon import path from './icons' to './Icons' to resolve filename casing conflict.
-import { AlertTriangleIcon } from './Icons';
+// FIX: Updated icon import path from './Icons' to './icons' to resolve filename casing conflict.
+import { AlertTriangleIcon } from './icons';
 
 interface InventoryTableProps {
   inventory: InventoryItem[];

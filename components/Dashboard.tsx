@@ -18,8 +18,8 @@ import IssuanceHistory from './IssuanceHistory';
 import RejectionModal from './RejectionModal';
 import NewPurchaseIntentForm from './NewPurchaseIntentForm';
 import PurchaseIntentsTable from './PurchaseIntentsTable';
-// FIX: Updated icon import path from './icons' to './Icons' to resolve filename casing conflict.
-import { PlusIcon, AlertTriangleIcon, CheckCircleIcon, InformationCircleIcon, ClipboardDocumentListIcon, ArchiveBoxIcon, Squares2X2Icon, ChartBarIcon, XMarkIcon, BuildingOfficeIcon, ReceiptRefundIcon, ArrowLeftStartOnRectangleIcon, DocumentPlusIcon, ClipboardDocumentCheckIcon } from './Icons';
+// FIX: Updated icon import path from './Icons' to './icons' to resolve filename casing conflict.
+import { PlusIcon, AlertTriangleIcon, CheckCircleIcon, InformationCircleIcon, ClipboardDocumentListIcon, ArchiveBoxIcon, Squares2X2Icon, ChartBarIcon, XMarkIcon, BuildingOfficeIcon, ReceiptRefundIcon, ArrowLeftStartOnRectangleIcon, DocumentPlusIcon, ClipboardDocumentCheckIcon } from './icons';
 import Reports from './Reports';
 import LowStockAlerts from './LowStockAlerts';
 
@@ -257,8 +257,11 @@ const Dashboard: React.FC<DashboardProps> = ({ currentUser }) => {
                     {/* Management Panel for Manager/Purchaser */}
                     {(currentUser.role === 'manager' || currentUser.role === 'purchaser') && (
                         <div className="bg-white rounded-xl shadow-sm p-6 space-y-4 border border-gray-200">
-                            <h3 className="text-lg font-semibold text-gray-800">Management Panel</h3>
+                            <h3 className="text-lg font-semibold text-gray-800">Actions & Management</h3>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <ActionButton onClick={() => setIsModalOpen(true)} icon={<DocumentPlusIcon className="w-5 h-5" />}>
+                                    Create Purchase Order
+                                </ActionButton>
                                 <ActionButton onClick={() => setIsMaterialModalOpen(true)} icon={<Squares2X2Icon className="w-5 h-5" />}>
                                     Manage Materials
                                 </ActionButton>

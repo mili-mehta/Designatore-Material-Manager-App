@@ -1,7 +1,7 @@
 import React from 'react';
 import { PurchaseOrder, Material, Vendor } from '../types';
 import Modal from './Modal';
-import { CheckCircleIcon } from './Icons';
+import { CheckCircleIcon } from './icons';
 
 interface DeliveryConfirmationModalProps {
   isOpen: boolean;

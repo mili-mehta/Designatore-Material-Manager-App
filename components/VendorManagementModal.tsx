@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Vendor, PurchaseOrder } from '../types';
-import { PencilIcon, TrashIcon } from './Icons';
+import { PencilIcon, TrashIcon } from './icons';
 import Modal from './Modal';
 import ExcelUpload from './ExcelUpload';
 

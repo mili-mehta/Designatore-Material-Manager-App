@@ -1,6 +1,6 @@
 import React from 'react';
 import { InventoryItem } from '../types';
-import { PlusIcon, CheckCircleIcon } from './Icons';
+import { PlusIcon, CheckCircleIcon } from './icons';
 
 interface LowStockAlertsProps {
   lowStockItems: InventoryItem[];

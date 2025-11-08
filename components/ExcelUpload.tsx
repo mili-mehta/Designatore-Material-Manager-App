@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { read, utils, WorkBook } from 'xlsx';
-import { ArrowUpTrayIcon, CheckCircleIcon, XMarkIcon } from './Icons';
+import { ArrowUpTrayIcon, CheckCircleIcon, XMarkIcon } from './icons';
 
 interface ExcelUploadProps<T> {
   onDataParsed: (data: T[]) => void;

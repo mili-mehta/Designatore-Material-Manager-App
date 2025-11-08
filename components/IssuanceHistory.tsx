@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { MaterialIssuance, Site, Material } from '../types';
-import { MagnifyingGlassIcon } from './Icons';
+import { MagnifyingGlassIcon } from './icons';
 
 interface IssuanceHistoryProps {
     issuances: MaterialIssuance[];

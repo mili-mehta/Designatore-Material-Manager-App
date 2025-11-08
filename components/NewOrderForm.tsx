@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { PurchaseOrder, Vendor, Priority, OrderStatus, OrderLineItem, Material, Site, User } from '../types';
 import { UNITS } from '../constants';
-// FIX: Updated icon import path from './icons' to './Icons' to resolve filename casing conflict.
-import { PlusIcon, TrashIcon } from './Icons';
+// FIX: Updated icon import path from './Icons' to './icons' to resolve filename casing conflict.
+import { PlusIcon, TrashIcon } from './icons';
 
 interface NewOrderFormProps {
   onAddOrder: (order: Omit<PurchaseOrder, 'id'>) => void;

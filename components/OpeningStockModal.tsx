@@ -3,7 +3,7 @@ import { Material, InventoryItem } from '../types';
 import Modal from './Modal';
 import { translations } from '../translations';
 import { UNITS } from '../constants';
-import { PlusIcon, TrashIcon } from './Icons';
+import { PlusIcon, TrashIcon } from './icons';
 import ExcelUpload from './ExcelUpload';
 
 // A simple i18n helper
