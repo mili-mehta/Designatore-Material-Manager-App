@@ -13,6 +13,7 @@ interface IssueMaterialFormProps {
 
 const IssueMaterialForm: React.FC<IssueMaterialFormProps> = ({ onIssue, onClose, currentUser, inventory, materials, sites }) => {
   const [materialId, setMaterialId] = useState<string>('');
+  const [materialNameInput, setMaterialNameInput] = useState<string>('');
   const [quantity, setQuantity] = useState<string>('');
   const [unit, setUnit] = useState<string>('');
   const [site, setSite] = useState<string>('');
@@ -30,6 +31,16 @@ const IssueMaterialForm: React.FC<IssueMaterialFormProps> = ({ onIssue, onClose,
     }
   }, [selectedInventoryItem]);
   
+  const handleMaterialChange = (name: string) => {
+    setMaterialNameInput(name);
+    const materialInInventory = inventory.find(i => i.name === name);
+    if (materialInInventory) {
+      setMaterialId(materialInInventory.id);
+    } else {
+      setMaterialId('');
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!materialId || !quantity || !site || !unit) {
@@ -57,17 +68,22 @@ const IssueMaterialForm: React.FC<IssueMaterialFormProps> = ({ onIssue, onClose,
       <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
         <div className="md:col-span-2">
             <label className={labelClasses}>Material</label>
-            <select value={materialId} onChange={e => setMaterialId(e.target.value)} className={inputClasses} required>
-                <option value="">Select Material</option>
-                {inventory.map(item => {
-                    const material = materials.find(m => m.id === item.id);
-                    return material ? (
-                        <option key={item.id} value={item.id}>
-                            {material.name} ({item.quantity} {item.unit} in stock)
-                        </option>
-                    ) : null;
-                })}
-            </select>
+            <input
+              type="text"
+              list="materials-issue-list"
+              value={materialNameInput}
+              onChange={e => handleMaterialChange(e.target.value)}
+              placeholder="Search and select material..."
+              className={inputClasses}
+              required
+            />
+            <datalist id="materials-issue-list">
+                {inventory.map(item => (
+                    <option key={item.id} value={item.name}>
+                        {`(${item.quantity} ${item.unit} in stock)`}
+                    </option>
+                ))}
+            </datalist>
         </div>
         <div className="md:col-span-2">
           <label className={labelClasses}>Quantity to Issue</label>

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Material, PurchaseIntent, User, Site, PurchaseIntentLineItem } from '../types';
 import { UNITS } from '../constants';
-// FIX: Changed icon import path from './icons' to './Icons' to resolve filename casing conflict.
-import { PlusIcon, TrashIcon } from './Icons';
+// FIX: Changed icon import path from './Icons' to './icons' to resolve filename casing conflict.
+import { PlusIcon, TrashIcon } from './icons';
 
 interface NewPurchaseIntentFormProps {
   onAddIntent: (intent: Omit<PurchaseIntent, 'id' | 'requestedOn' | 'status'>) => void;
@@ -12,22 +12,30 @@ interface NewPurchaseIntentFormProps {
   sites: Site[];
 }
 
+type FormIntentLineItem = Partial<PurchaseIntentLineItem> & { _materialNameInput?: string };
+
 const NewPurchaseIntentForm: React.FC<NewPurchaseIntentFormProps> = ({ onAddIntent, onClose, currentUser, materials, sites }) => {
-  const [lineItems, setLineItems] = useState<Partial<PurchaseIntentLineItem>[]>([{}]);
+  const [lineItems, setLineItems] = useState<FormIntentLineItem[]>([{}]);
   const [notes, setNotes] = useState('');
 
-  const handleLineItemChange = (index: number, field: keyof PurchaseIntentLineItem, value: any) => {
+  const handleLineItemChange = (index: number, field: keyof FormIntentLineItem, value: any) => {
     const updatedLineItems = [...lineItems];
-    updatedLineItems[index] = { ...updatedLineItems[index], [field]: value };
-    
-    if (field === 'materialId') {
-        // FIX: Removed Number() conversion as material ID is a string.
-        const material = materials.find(m => m.id === value);
+    const currentItem = { ...updatedLineItems[index] };
+
+    if (field === '_materialNameInput') {
+        currentItem._materialNameInput = value;
+        const material = materials.find(m => m.name === value);
         if (material) {
-            updatedLineItems[index].unit = material.unit;
+            currentItem.materialId = material.id;
+            currentItem.unit = material.unit;
+        } else {
+            currentItem.materialId = undefined;
         }
+    } else {
+        (currentItem as any)[field] = value;
     }
-    
+
+    updatedLineItems[index] = currentItem;
     setLineItems(updatedLineItems);
   };
 
@@ -79,10 +87,18 @@ const NewPurchaseIntentForm: React.FC<NewPurchaseIntentFormProps> = ({ onAddInte
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                  <div>
                     <label className={smallLabelClasses}>Material</label>
-                    <select value={item.materialId || ''} onChange={e => handleLineItemChange(index, 'materialId', e.target.value)} className={smallInputClasses} required>
-                        <option value="">Select Material</option>
-                         {materials.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-                    </select>
+                    <input
+                        type="text"
+                        list="materials-intent-list"
+                        value={item._materialNameInput || ''}
+                        onChange={e => handleLineItemChange(index, '_materialNameInput', e.target.value)}
+                        placeholder="Search and select material..."
+                        className={smallInputClasses}
+                        required
+                    />
+                    <datalist id="materials-intent-list">
+                        {materials.map(m => <option key={m.id} value={m.name} />)}
+                    </datalist>
                 </div>
                 <div>
                     <label className={smallLabelClasses}>Site / Client</label>
