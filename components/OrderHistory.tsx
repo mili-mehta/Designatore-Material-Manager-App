@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { PurchaseOrder, Vendor, OrderStatus, Material } from '../types';
-// FIX: Updated icon import path to './icons' to resolve a filename casing conflict.
+// FIX: To resolve a filename casing conflict, all icon imports are standardized to use './icons'.
 import { MagnifyingGlassIcon } from './icons';
 
 interface OrderHistoryProps {
@@ -15,6 +15,8 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ orders, vendors, materials,
     const [endDate, setEndDate] = useState('');
     const [selectedMaterialId, setSelectedMaterialId] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
+
+    const sortedMaterials = useMemo(() => [...materials].sort((a, b) => a.name.localeCompare(b.name)), [materials]);
 
     const getStatusClass = (status: OrderStatus) => {
         switch (status) {
@@ -86,7 +88,7 @@ const OrderHistory: React.FC<OrderHistoryProps> = ({ orders, vendors, materials,
                         <label className="block mb-1.5 text-sm font-medium text-gray-600">Filter by Material</label>
                         <select value={selectedMaterialId} onChange={e => setSelectedMaterialId(e.target.value)} className={inputClasses}>
                             <option value="">All Materials</option>
-                            {materials.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                            {sortedMaterials.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                         </select>
                     </div>
                     <div>

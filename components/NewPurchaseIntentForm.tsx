@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Material, PurchaseIntent, User, Site, PurchaseIntentLineItem } from '../types';
 import { UNITS } from '../constants';
-// FIX: Updated icon import path to './icons' to resolve a filename casing conflict.
+// FIX: To resolve a filename casing conflict, all icon imports are standardized to use './icons'.
 import { PlusIcon, TrashIcon } from './icons';
 
 interface NewPurchaseIntentFormProps {
@@ -17,6 +17,9 @@ type FormIntentLineItem = Partial<PurchaseIntentLineItem> & { _materialNameInput
 const NewPurchaseIntentForm: React.FC<NewPurchaseIntentFormProps> = ({ onAddIntent, onClose, currentUser, materials, sites }) => {
   const [lineItems, setLineItems] = useState<FormIntentLineItem[]>([{}]);
   const [notes, setNotes] = useState('');
+
+  const sortedMaterials = useMemo(() => [...materials].sort((a, b) => a.name.localeCompare(b.name)), [materials]);
+  const sortedSites = useMemo(() => [...sites].sort((a, b) => a.name.localeCompare(b.name)), [sites]);
 
   const handleLineItemChange = (index: number, field: keyof FormIntentLineItem, value: any) => {
     const updatedLineItems = [...lineItems];
@@ -97,7 +100,7 @@ const NewPurchaseIntentForm: React.FC<NewPurchaseIntentFormProps> = ({ onAddInte
                         required
                     />
                     <datalist id="materials-intent-list">
-                        {materials.map(m => <option key={m.id} value={m.name} />)}
+                        {sortedMaterials.map(m => <option key={m.id} value={m.name} />)}
                     </datalist>
                 </div>
                 <div>
@@ -111,7 +114,7 @@ const NewPurchaseIntentForm: React.FC<NewPurchaseIntentFormProps> = ({ onAddInte
                         list="sites-list"
                     />
                     <datalist id="sites-list">
-                        {sites.map(site => <option key={site.id} value={site.name} />)}
+                        {sortedSites.map(site => <option key={site.id} value={site.name} />)}
                     </datalist>
                 </div>
             </div>

@@ -13,8 +13,8 @@ export const INITIAL_MATERIALS: Omit<Material, 'id'>[] = [
 ];
 
 export const UNITS: string[] = [
-    'sheets', 'sq. ft.', 'meters', 'liters', 'pieces', 'Gram', 'Kg', 'Pcs', 'Sq.Mtr', 'Box', 
-    'Roll', 'Bag', 'Pkt', 'Nos.', 'Cubic. Mtr', 'Cubic. Ft.', 'Running Ft.', 'Tin', 'Drum', 'Set'
+    'Bag', 'Box', 'Cubic. Ft.', 'Cubic. Mtr', 'Drum', 'Gram', 'Kg', 'liters', 'meters', 'Nos.', 'Pcs', 'pieces', 'Pkt', 
+    'Roll', 'Running Ft.', 'Set', 'sheets', 'sq. ft.', 'Sq.Mtr', 'Tin'
 ];
 
 export const INITIAL_VENDORS: Omit<Vendor, 'id'>[] = [

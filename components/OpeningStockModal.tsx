@@ -3,7 +3,7 @@ import { Material, InventoryItem } from '../types';
 import Modal from './Modal';
 import { translations } from '../translations';
 import { UNITS } from '../constants';
-// FIX: Updated icon import path to './icons' to resolve a filename casing conflict.
+// FIX: To resolve a filename casing conflict, all icon imports are standardized to use './icons'.
 import { PlusIcon, TrashIcon } from './icons';
 import ExcelUpload from './ExcelUpload';
 
@@ -21,7 +21,7 @@ interface OpeningStockModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSave: (payload: {
-    updatedStocks: { materialId: string; quantity: number }[];
+    updatedStocks: { materialId: string; quantity: number; unit: string; }[];
     newItems: { name: string; unit: string; quantity: number }[];
   }) => void;
   onBulkSet: (data: BulkStockItem[]) => void;
@@ -32,6 +32,7 @@ interface OpeningStockModalProps {
 interface StockLevel {
   materialId: string;
   quantity: number;
+  unit: string;
 }
 
 interface NewItem {
@@ -63,6 +64,7 @@ const OpeningStockModal: React.FC<OpeningStockModalProps> = ({
         return {
           materialId: material.id,
           quantity: inventoryItem ? inventoryItem.quantity : 0,
+          unit: inventoryItem ? inventoryItem.unit : material.unit,
         };
       });
       setStockLevels(initialStock);
@@ -76,12 +78,18 @@ const OpeningStockModal: React.FC<OpeningStockModalProps> = ({
     }
   }, [isOpen, materials, inventory]);
 
-  const handleQuantityChange = (materialId: string, newQuantity: string) => {
-    const quantity = parseInt(newQuantity, 10);
+  const handleStockChange = (materialId: string, field: 'quantity' | 'unit', value: string) => {
     setStockLevels(prev =>
-      prev.map(stock =>
-        stock.materialId === materialId ? { ...stock, quantity: isNaN(quantity) ? 0 : quantity } : stock
-      )
+      prev.map(stock => {
+        if (stock.materialId === materialId) {
+          if (field === 'quantity') {
+            const quantity = parseInt(value, 10);
+            return { ...stock, quantity: isNaN(quantity) ? 0 : quantity };
+          }
+          return { ...stock, [field]: value };
+        }
+        return stock;
+      })
     );
   };
   
@@ -145,13 +153,19 @@ const OpeningStockModal: React.FC<OpeningStockModalProps> = ({
             const stock = stockLevels.find(s => s.materialId === material.id);
             return (
               <div key={material.id} className="grid grid-cols-5 gap-4 items-center">
-                <label className="col-span-3 text-sm font-medium text-gray-700">{material.name}</label>
-                 <span className="text-xs text-gray-500 text-right">{material.unit}</span>
+                <label className="col-span-2 text-sm font-medium text-gray-700">{material.name}</label>
+                 <select
+                   value={stock ? stock.unit : ''}
+                   onChange={e => handleStockChange(material.id, 'unit', e.target.value)}
+                   className={`${inputClasses}`}
+                 >
+                   {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
+                 </select>
                 <input
                   type="number"
                   value={stock ? stock.quantity : 0}
-                  onChange={e => handleQuantityChange(material.id, e.target.value)}
-                  className={`${inputClasses} text-right`}
+                  onChange={e => handleStockChange(material.id, 'quantity', e.target.value)}
+                  className={`${inputClasses} text-right col-span-2`}
                   min="0"
                   step="any"
                 />

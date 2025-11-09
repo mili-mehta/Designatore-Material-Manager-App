@@ -1,634 +1,355 @@
-import React, { createContext, useState, useEffect, useContext, useMemo, useCallback } from 'react';
-import { AppNotification, InventoryItem, PurchaseOrder, User, OrderStatus, Vendor, Material, Site, MaterialIssuance, PurchaseIntent, OrderLineItem, PurchaseIntentStatus, PurchaseIntentLineItem } from '../types';
-import { supabase } from '../services/supabase';
+import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
+import {
+  Material, Vendor, Site, InventoryItem, PurchaseOrder, MaterialIssuance, PurchaseIntent,
+  AppNotification, OrderStatus, Priority, PurchaseIntentStatus, OrderLineItem, PurchaseIntentLineItem,
+} from '../types';
+import {
+  INITIAL_MATERIALS, INITIAL_VENDORS, INITIAL_SITES, INITIAL_INVENTORY, INITIAL_ORDERS,
+} from '../constants';
 
-
-// Define the shape of the context state
-interface AppContextState {
-    inventory: InventoryItem[];
-    orders: PurchaseOrder[];
-    vendors: Vendor[];
-    materials: Material[];
-    sites: Site[];
-    issuances: MaterialIssuance[];
-    purchaseIntents: PurchaseIntent[];
-    isLoading: boolean;
-    notifications: AppNotification[];
-    addNotification: (type: AppNotification['type'], message: string) => void;
-    removeNotification: (id: number) => void;
-    handleAddOrder: (order: Omit<PurchaseOrder, 'id'>) => void;
-    handleUpdateOrder: (updatedOrder: PurchaseOrder) => void;
-    handleApproveOrder: (orderId: string, currentUser: User) => void;
-    handleConfirmRejectOrder: (currentUser: User, rejectingOrder: PurchaseOrder, reason: string) => void;
-    handleUpdateOrderStatus: (currentUser: User, orderId: string, status: OrderStatus) => void;
-    handleIssueMaterial: (currentUser: User, materialId: string, quantity: number, unit: string, issuedToSite: string, notes?: string) => void;
-    handleAddVendor: (name: string) => void;
-    handleUpdateVendor: (vendor: Vendor) => void;
-    handleDeleteVendor: (vendorId: string) => void;
-    handleBulkAddVendors: (data: { name: string }[]) => void;
-    handleAddMaterial: (name: string, unit: string) => void;
-    handleUpdateMaterial: (mat: Material) => void;
-    handleDeleteMaterial: (materialId: string) => void;
-    handleBulkAddMaterials: (data: { name: string, unit?: string }[]) => void;
-    handleAddSite: (name: string) => void;
-    handleUpdateSite: (site: Site) => void;
-    handleDeleteSite: (siteId: string) => void;
-    handleBulkAddSites: (data: { name: string }[]) => void;
-    handleAddIntent: (currentUser: User, intent: Omit<PurchaseIntent, 'id' | 'requestedOn' | 'status' | 'requestedBy'>) => void;
-    handleApproveIntent: (intentId: string, currentUser: User) => void;
-    handleConfirmRejectIntent: (currentUser: User, rejectingIntent: PurchaseIntent, reason: string) => void;
-    handleCreateOrderFromIntent: (intent: PurchaseIntent) => { initialData: Partial<PurchaseOrder>, updatedIntent: PurchaseIntent };
-    handleSaveOpeningStock: (payload: { updatedStocks: { materialId: string; quantity: number }[], newItems: { name: string, unit: string, quantity: number }[] }) => void;
-    handleBulkSetOpeningStock: (data: { name: string, unit: string, quantity: number, threshold: number }[]) => void;
+interface AppContextType {
+  materials: Material[];
+  vendors: Vendor[];
+  sites: Site[];
+  inventory: InventoryItem[];
+  orders: PurchaseOrder[];
+  issuances: MaterialIssuance[];
+  purchaseIntents: PurchaseIntent[];
+  notifications: AppNotification[];
+  addOrder: (order: Omit<PurchaseOrder, 'id'>) => void;
+  updateOrder: (order: PurchaseOrder) => void;
+  markOrderAsDelivered: (orderId: string, receivedBy: string) => void;
+  approveOrder: (orderId: string) => void;
+  rejectOrder: (orderId: string, reason: string, rejectedBy: string) => void;
+  addVendor: (name: string) => void;
+  updateVendor: (vendor: Vendor) => void;
+  deleteVendor: (vendorId: string) => void;
+  addMaterial: (name: string, unit: string) => void;
+  updateMaterial: (material: Material) => void;
+  deleteMaterial: (materialId: string) => void;
+  addSite: (name: string) => void;
+  updateSite: (site: Site) => void;
+  deleteSite: (siteId: string) => void;
+  issueMaterial: (materialId: string, quantity: number, unit: string, issuedToSite: string, notes: string | undefined, issuedBy: string) => void;
+  addPurchaseIntent: (intent: Omit<PurchaseIntent, 'id' | 'requestedOn' | 'status'>) => void;
+  approvePurchaseIntent: (intentId: string) => void;
+  rejectPurchaseIntent: (intentId: string, reason: string, reviewedBy: string) => void;
+  convertIntentToOrder: (intentId: string) => Partial<PurchaseOrder>;
+  setOpeningStock: (payload: { updatedStocks: { materialId: string; quantity: number; unit: string; }[]; newItems: { name: string; unit: string; quantity: number }[] }) => void;
+  addBulkStock: (data: { name: string; unit: string; quantity: number; threshold: number }[]) => void;
+  addBulkMaterials: (data: { name: string, unit?: string }[]) => void;
+  addBulkVendors: (data: { name: string }[]) => void;
+  addBulkSites: (data: { name: string }[]) => void;
+  updateInventoryItem: (itemId: string, updates: Partial<InventoryItem>) => void;
 }
 
-// Create the context
-const AppContext = createContext<AppContextState | undefined>(undefined);
+export const AppContext = createContext<AppContextType | undefined>(undefined);
 
-// Helper to convert snake_case keys from Supabase to camelCase
-const toCamelCase = (obj: any) => {
-    if (Array.isArray(obj)) {
-        return obj.map(v => toCamelCase(v));
-    } else if (obj && obj.constructor === Object) {
-        return Object.keys(obj).reduce(
-            (result, key) => ({
-                ...result,
-                [key.replace(/_([a-z])/g, g => g[1].toUpperCase())]: toCamelCase(obj[key]),
-            }),
-            {},
-        );
-    }
-    return obj;
-};
+export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+  const [materials, setMaterials] = useState<Material[]>(() => 
+    INITIAL_MATERIALS.map((m, i) => ({ ...m, id: `M-${i + 1}` }))
+  );
+  const [vendors, setVendors] = useState<Vendor[]>(() =>
+    INITIAL_VENDORS.map((v, i) => ({ ...v, id: `V-${i + 1}` }))
+  );
+  const [sites, setSites] = useState<Site[]>(() =>
+    INITIAL_SITES.map((s, i) => ({ ...s, id: `S-${i + 1}` }))
+  );
+  const [inventory, setInventory] = useState<InventoryItem[]>(() => {
+    const allMaterials = INITIAL_MATERIALS.map((m, i) => ({ ...m, id: `M-${i + 1}` }));
+    return INITIAL_INVENTORY.map((item, i) => {
+      const material = allMaterials.find(m => m.name === item.name);
+      return { 
+        ...item, 
+        id: material?.id || `I-${i + 1}`,
+        name: material?.name || item.name,
+        unit: material?.unit || item.unit
+      };
+    })
+  });
+  const [orders, setOrders] = useState<PurchaseOrder[]>(() => {
+    const allMaterials = INITIAL_MATERIALS.map((m, i) => ({ ...m, id: `M-${i + 1}` }));
+    const allVendors = INITIAL_VENDORS.map((v, i) => ({ ...v, id: `V-${i + 1}` }));
+    
+    return INITIAL_ORDERS.map((order, i) => {
+      const vendor = allVendors.find(v => v.name === order.vendorName);
+      const poId = `PO-00${i + 1}`;
+      return {
+        ...order,
+        id: poId,
+        vendorId: vendor?.id || 'V-UNKNOWN',
+        lineItems: order.lineItems.map((li, j) => {
+            const material = allMaterials.find(m => m.name === li.materialName);
+            return {
+                ...li,
+                id: `LI-${poId}-${j}`,
+                orderId: poId,
+                materialId: material?.id || 'M-UNKNOWN',
+                specifications: li.specifications || '',
+                gst: li.gst || 18
+            }
+        })
+      };
+    });
+  });
 
-// Helper to convert camelCase keys to snake_case for Supabase
-const toSnakeCase = (obj: any) => {
-    if (Array.isArray(obj)) {
-        return obj.map(v => toSnakeCase(v));
-    } else if (obj && obj.constructor === Object) {
-        return Object.keys(obj).reduce(
-            (result, key) => ({
-                ...result,
-                [key.replace(/[A-Z]/g, letter => `_${letter.toLowerCase()}`)]: toSnakeCase(obj[key]),
-            }),
-            {},
-        );
-    }
-    return obj;
-};
+  const [issuances, setIssuances] = useState<MaterialIssuance[]>([]);
+  const [purchaseIntents, setPurchaseIntents] = useState<PurchaseIntent[]>([]);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
 
-// Create the provider component
-export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [inventory, setInventory] = useState<InventoryItem[]>([]);
-    const [orders, setOrders] = useState<PurchaseOrder[]>([]);
-    const [vendors, setVendors] = useState<Vendor[]>([]);
-    const [materials, setMaterials] = useState<Material[]>([]);
-    const [sites, setSites] = useState<Site[]>([]);
-    const [issuances, setIssuances] = useState<MaterialIssuance[]>([]);
-    const [purchaseIntents, setPurchaseIntents] = useState<PurchaseIntent[]>([]);
-    const [notifications, setNotifications] = useState<AppNotification[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+  const addNotification = useCallback((type: AppNotification['type'], message: string) => {
+    setNotifications(prev => [...prev, { id: Date.now(), type, message }]);
+  }, []);
 
+  const addOrder = useCallback((order: Omit<PurchaseOrder, 'id'>) => {
+    const newOrder: PurchaseOrder = {
+      ...order,
+      id: `PO-${Date.now()}`
+    };
+    setOrders(prev => [newOrder, ...prev]);
+  }, []);
 
-    const loadData = useCallback(async () => {
-        setIsLoading(true);
-        try {
-            const [
-                materialsRes,
-                vendorsRes,
-                sitesRes,
-                inventoryRes,
-                ordersRes,
-                lineItemsRes,
-                intentsRes,
-                intentLineItemsRes,
-                issuancesRes
-            ] = await Promise.all([
-                supabase.from('materials').select('*'),
-                supabase.from('vendors').select('*'),
-                supabase.from('sites').select('*'),
-                supabase.from('inventory').select('*'),
-                supabase.from('purchase_orders').select('*'),
-                supabase.from('order_line_items').select('*'),
-                supabase.from('purchase_intents').select('*'),
-                supabase.from('purchase_intent_line_items').select('*'),
-                supabase.from('material_issuances').select('*'),
-            ]);
+  const updateOrder = useCallback((updatedOrder: PurchaseOrder) => {
+    setOrders(prev => prev.map(o => o.id === updatedOrder.id ? updatedOrder : o));
+  }, []);
+  
+  const markOrderAsDelivered = useCallback((orderId: string, receivedBy: string) => {
+    setOrders(prevOrders => {
+        const orderToDeliver = prevOrders.find(o => o.id === orderId);
+        if (!orderToDeliver) return prevOrders;
 
-            // Process Materials, Vendors, Sites
-            const loadedMaterials: Material[] = toCamelCase(materialsRes.data || []);
-            setMaterials(loadedMaterials);
-            setVendors(toCamelCase(vendorsRes.data || []));
-            setSites(toCamelCase(sitesRes.data || []));
-
-            // Process Inventory
-            const loadedInventoryItems: {materialId: string, quantity: number, threshold: number}[] = toCamelCase(inventoryRes.data || []);
-            const combinedInventory = loadedInventoryItems.map(invItem => {
-                const material = loadedMaterials.find(m => m.id === invItem.materialId);
-                return {
-                    ...material,
-                    ...invItem,
-                    id: invItem.materialId,
-                } as InventoryItem;
-            }).filter(item => item.name); // Filter out items where material might be missing
-            setInventory(combinedInventory);
-
-            // Process Orders and Line Items
-            const loadedOrders: PurchaseOrder[] = toCamelCase(ordersRes.data || []);
-            const loadedLineItems: OrderLineItem[] = toCamelCase(lineItemsRes.data || []);
-            const combinedOrders = loadedOrders.map(order => ({
-                ...order,
-                lineItems: loadedLineItems.filter(li => li.orderId === order.id)
-            }));
-            setOrders(combinedOrders);
-            
-            // Process Intents and Line Items
-            const loadedIntents: PurchaseIntent[] = toCamelCase(intentsRes.data || []);
-            const loadedIntentLineItems: PurchaseIntentLineItem[] = toCamelCase(intentLineItemsRes.data || []);
-            const combinedIntents = loadedIntents.map(intent => ({
-                ...intent,
-                lineItems: loadedIntentLineItems.filter(li => li.intentId === intent.id)
-            }));
-            setPurchaseIntents(combinedIntents);
-
-            // Process Issuances
-            setIssuances(toCamelCase(issuancesRes.data || []));
-
-        } catch (error) {
-            console.error("Error loading data from Supabase:", error);
-            addNotification('warning', 'Failed to load data from the server.');
-        } finally {
-            setIsLoading(false);
-        }
-    }, []);
-
-    useEffect(() => {
-        loadData();
-    }, [loadData]);
-
-
-    // --- NOTIFICATION HANDLERS ---
-    const addNotification = (type: AppNotification['type'], message: string) => {
-        setNotifications(prev => {
-            if (prev.some(n => n.message === message)) return prev;
-            const newNotification = { id: Date.now(), type, message };
-            const timeout = type === 'warning' ? 10000 : 5000;
-            setTimeout(() => removeNotification(newNotification.id), timeout); 
-            return [...prev, newNotification];
+        setInventory(prevInventory => {
+            const newInventory = [...prevInventory];
+            orderToDeliver.lineItems.forEach(li => {
+                const itemIndex = newInventory.findIndex(invItem => invItem.id === li.materialId);
+                if (itemIndex > -1) {
+                    newInventory[itemIndex].quantity += li.quantity;
+                } else {
+                    const material = materials.find(m => m.id === li.materialId);
+                    if (material) {
+                         newInventory.push({
+                            ...material,
+                            quantity: li.quantity,
+                            threshold: 10 // default threshold for new items
+                        });
+                    }
+                }
+            });
+            return newInventory;
         });
-    };
-    const removeNotification = (id: number) => setNotifications(prev => prev.filter(n => n.id !== id));
-    
-    // --- DATA HANDLER FUNCTIONS (SUPABASE) ---
-
-    const handleAddOrder = async (order: Omit<PurchaseOrder, 'id'>) => {
-        const orderId = `PO-${Date.now()}`;
-        const { lineItems, ...orderData } = order;
-
-        const { error: orderError } = await supabase
-            .from('purchase_orders')
-            .insert([toSnakeCase({ ...orderData, id: orderId })]);
         
-        if (orderError) {
-            addNotification('warning', 'Failed to create purchase order.');
-            console.error(orderError);
-            return;
-        }
+        return prevOrders.map(o => 
+            o.id === orderId ? { 
+                ...o, 
+                status: OrderStatus.Delivered, 
+                deliveredOn: new Date().toISOString().split('T')[0],
+                receivedBy 
+            } : o
+        );
+    });
+}, [materials]);
 
-        const lineItemsWithOrderId = lineItems.map(li => ({ ...li, orderId: orderId, id: `LI-${Math.random().toString(36).slice(2)}` }));
-        const { error: lineItemsError } = await supabase
-            .from('order_line_items')
-            .insert(toSnakeCase(lineItemsWithOrderId));
 
-        if (lineItemsError) {
-            addNotification('warning', 'Failed to save order items.');
-            console.error(lineItemsError);
-             // Attempt to roll back
-            await supabase.from('purchase_orders').delete().eq('id', orderId);
-            return;
-        }
+  const approveOrder = useCallback((orderId: string) => {
+      updateOrder({
+          ...orders.find(o => o.id === orderId)!,
+          status: OrderStatus.Pending,
+          approvedBy: 'Manager', // In a real app, this would be the current user's name
+          approvedOn: new Date().toISOString().split('T')[0]
+      });
+  }, [orders, updateOrder]);
 
-        addNotification('success', 'Purchase Order created successfully.');
-        loadData();
+  const rejectOrder = useCallback((orderId: string, reason: string, rejectedBy: string) => {
+       updateOrder({
+          ...orders.find(o => o.id === orderId)!,
+          status: OrderStatus.Cancelled, // Or a new "Rejected" status
+          rejectedBy,
+          rejectionReason: reason,
+          rejectedOn: new Date().toISOString().split('T')[0]
+      });
+  }, [orders, updateOrder]);
+
+  // Vendor Management
+  const addVendor = useCallback((name: string) => setVendors(prev => [...prev, { id: `V-${Date.now()}`, name }]), []);
+  const updateVendor = useCallback((vendor: Vendor) => setVendors(prev => prev.map(v => v.id === vendor.id ? vendor : v)), []);
+  const deleteVendor = useCallback((vendorId: string) => setVendors(prev => prev.filter(v => v.id !== vendorId)), []);
+
+  // Material Management
+  const addMaterial = useCallback((name: string, unit: string) => setMaterials(prev => [...prev, { id: `M-${Date.now()}`, name, unit }]), []);
+  const updateMaterial = useCallback((material: Material) => setMaterials(prev => prev.map(m => m.id === material.id ? material : m)), []);
+  const deleteMaterial = useCallback((materialId: string) => setMaterials(prev => prev.filter(m => m.id !== materialId)), []);
+
+  // Site Management
+  const addSite = useCallback((name: string) => setSites(prev => [...prev, { id: `S-${Date.now()}`, name }]), []);
+  const updateSite = useCallback((site: Site) => setSites(prev => prev.map(s => s.id === site.id ? site : s)), []);
+  const deleteSite = useCallback((siteId: string) => setSites(prev => prev.filter(s => s.id !== siteId)), []);
+
+  // Material Issuance
+  const issueMaterial = useCallback((materialId: string, quantity: number, unit: string, issuedToSite: string, notes: string | undefined, issuedBy: string) => {
+      setInventory(prev => prev.map(item => item.id === materialId ? { ...item, quantity: item.quantity - quantity } : item));
+      setIssuances(prev => [...prev, {
+          id: `ISS-${Date.now()}`,
+          materialId,
+          quantity,
+          unit,
+          issuedToSite,
+          issuedBy,
+          issuedOn: new Date().toISOString().split('T')[0],
+          notes,
+      }]);
+  }, []);
+
+  // Purchase Intent
+  const addPurchaseIntent = useCallback((intent: Omit<PurchaseIntent, 'id' | 'requestedOn' | 'status'>) => {
+    const newIntent: PurchaseIntent = {
+      ...intent,
+      id: `PI-${Date.now()}`,
+      requestedOn: new Date().toISOString().split('T')[0],
+      status: PurchaseIntentStatus.Pending,
     };
-    
-    const handleUpdateOrder = async (updatedOrder: PurchaseOrder) => {
-        const { lineItems, ...orderData } = updatedOrder;
-        
-        const { error: orderError } = await supabase
-            .from('purchase_orders')
-            .update(toSnakeCase(orderData))
-            .eq('id', updatedOrder.id);
-            
-        if(orderError) {
-            addNotification('warning', 'Failed to update order.');
-            console.error(orderError);
-            return;
-        }
-        
-        // Easiest way to handle line item changes is to delete and re-insert
-        await supabase.from('order_line_items').delete().eq('order_id', updatedOrder.id);
-        const lineItemsWithOrderId = lineItems.map(li => ({ ...li, orderId: updatedOrder.id, id: li.id || `LI-${Math.random().toString(36).slice(2)}` }));
-        await supabase.from('order_line_items').insert(toSnakeCase(lineItemsWithOrderId));
+    setPurchaseIntents(prev => [newIntent, ...prev]);
+  }, []);
+  
+  const approvePurchaseIntent = useCallback((intentId: string) => {
+    setPurchaseIntents(prev => prev.map(i => i.id === intentId ? {...i, status: PurchaseIntentStatus.Approved} : i));
+  }, []);
 
-        addNotification('success', `Order has been successfully updated.`);
-        loadData();
-    };
-
-    const handleApproveOrder = async (orderId: string, currentUser: User) => {
-        const { error } = await supabase
-            .from('purchase_orders')
-            .update({ 
-                status: OrderStatus.Pending,
-                approved_by: currentUser.name,
-                approved_on: new Date().toISOString().split('T')[0]
-            })
-            .eq('id', orderId);
-        
-        if (error) {
-            addNotification('warning', 'Failed to approve order.');
-        } else {
-            addNotification('success', `Order has been approved.`);
-            loadData();
-        }
-    };
-
-    const handleConfirmRejectOrder = async (currentUser: User, rejectingOrder: PurchaseOrder, reason: string) => {
-         const { error } = await supabase
-            .from('purchase_orders')
-            .update({ 
-                status: OrderStatus.Cancelled,
-                rejected_by: currentUser.name,
-                rejected_on: new Date().toISOString().split('T')[0],
-                rejection_reason: reason
-            })
-            .eq('id', rejectingOrder.id);
-        
-         if (error) {
-            addNotification('warning', 'Failed to reject order.');
-        } else {
-            addNotification('info', `Order has been rejected.`);
-            loadData();
-        }
-    };
-
-    const handleUpdateOrderStatus = async (currentUser: User, orderId: string, status: OrderStatus) => {
-        const orderToUpdate = orders.find(o => o.id === orderId);
-        if (!orderToUpdate) return;
-        
-        let updatePayload: any = { status };
-        if (status === OrderStatus.Delivered) {
-            updatePayload.delivered_on = new Date().toISOString().split('T')[0];
-            updatePayload.received_by = currentUser.name;
-
-            // Update inventory transaction
-            for (const item of orderToUpdate.lineItems) {
-                // Supabase doesn't have an increment function without an RPC call, so we fetch and update
-                const { data: currentItem } = await supabase.from('inventory').select('quantity').eq('material_id', item.materialId).single();
-                if(currentItem) {
-                    await supabase.from('inventory').update({ quantity: currentItem.quantity + item.quantity }).eq('material_id', item.materialId);
-                }
-            }
-        }
-        
-        const { error } = await supabase.from('purchase_orders').update(updatePayload).eq('id', orderId);
-        if(error) {
-            addNotification('warning', 'Failed to update order status.');
-            return;
-        }
-
-        addNotification('success', `Order status updated to ${status}.`);
-        loadData();
-    };
-
-    const handleIssueMaterial = async (currentUser: User, materialId: string, quantity: number, unit: string, issuedToSite: string, notes?: string) => {
-        const newIssuance = { id: `ISS-${Date.now()}`, materialId, quantity, unit, issuedToSite, notes, issuedBy: currentUser.name || 'Unknown', issuedOn: new Date().toISOString().split('T')[0] };
-        
-        const { data: currentItem } = await supabase.from('inventory').select('quantity').eq('material_id', materialId).single();
-        if(!currentItem || currentItem.quantity < quantity) {
-            addNotification('warning', 'Insufficient stock.');
-            return;
-        }
-        
-        const { error } = await supabase.from('material_issuances').insert(toSnakeCase([newIssuance]));
-        if(error) {
-            addNotification('warning', 'Failed to record issuance.');
-            return;
-        }
-
-        await supabase.from('inventory').update({ quantity: currentItem.quantity - quantity }).eq('material_id', materialId);
-        
-        addNotification('success', 'Material issued successfully.');
-        loadData();
-    };
-
-    const handleAddVendor = async (name: string) => {
-        const newVendor = { id: `V-${Math.random().toString(36).slice(2)}`, name };
-        await supabase.from('vendors').insert(toSnakeCase([newVendor]));
-        addNotification('success', 'Vendor added successfully.');
-        loadData();
-    };
-    
-    const handleUpdateVendor = async (vendor: Vendor) => {
-        await supabase.from('vendors').update(toSnakeCase(vendor)).eq('id', vendor.id);
-        addNotification('success', 'Vendor updated successfully.');
-        loadData();
-    };
-    
-    const handleDeleteVendor = async (vendorId: string) => {
-        await supabase.from('vendors').delete().eq('id', vendorId);
-        addNotification('success', 'Vendor deleted successfully.');
-        loadData();
-    };
-
-    const handleBulkAddVendors = async (data: { name: string }[]) => {
-        const existingNames = new Set(vendors.map(v => v.name.toLowerCase()));
-        const seenInUpload = new Set<string>();
-
-        const newVendors = data
-            .filter(v => {
-                if (!v.name || !v.name.trim()) return false;
-                const lowerCaseName = v.name.trim().toLowerCase();
-                if (existingNames.has(lowerCaseName) || seenInUpload.has(lowerCaseName)) {
-                    return false;
-                }
-                seenInUpload.add(lowerCaseName);
-                return true;
-            })
-            .map(v => ({ id: `V-${Math.random().toString(36).slice(2)}`, name: v.name.trim() }));
-
-        if (newVendors.length === 0) {
-            addNotification('info', 'No new vendors to add. All names already exist or are empty.');
-            return;
-        }
-
-        const { error } = await supabase.from('vendors').insert(toSnakeCase(newVendors));
-        if (error) {
-            addNotification('warning', 'Failed to bulk add vendors.');
-            console.error(error);
-        } else {
-            addNotification('success', `${newVendors.length} vendors added successfully.`);
-            loadData();
-        }
-    };
-    
-    const handleAddMaterial = async (name: string, unit: string) => {
-        const newMaterial = { id: `M-${Math.random().toString(36).slice(2)}`, name, unit };
-        const newInventoryItem = { materialId: newMaterial.id, quantity: 0, threshold: 10 };
-
-        await supabase.from('materials').insert(toSnakeCase([newMaterial]));
-        await supabase.from('inventory').insert(toSnakeCase([newInventoryItem]));
-        
-        addNotification('success', `Material added successfully.`);
-        loadData();
-    };
-    
-    const handleUpdateMaterial = async (mat: Material) => {
-        await supabase.from('materials').update(toSnakeCase(mat)).eq('id', mat.id);
-        addNotification('success', 'Material updated successfully.');
-        loadData();
-    };
-    
-    const handleDeleteMaterial = async (materialId: string) => {
-        await supabase.from('inventory').delete().eq('material_id', materialId);
-        await supabase.from('materials').delete().eq('id', materialId);
-        addNotification('success', 'Material deleted successfully.');
-        loadData();
-    };
-
-    const handleBulkAddMaterials = async (data: { name: string, unit?: string }[]) => {
-        const existingNames = new Set(materials.map(m => m.name.toLowerCase()));
-        const seenInUpload = new Set<string>();
-
-        const newMaterials = data
-            .filter(m => {
-                if (!m.name || !m.name.trim()) return false;
-                const lowerCaseName = m.name.trim().toLowerCase();
-                if (existingNames.has(lowerCaseName) || seenInUpload.has(lowerCaseName)) {
-                    return false;
-                }
-                seenInUpload.add(lowerCaseName);
-                return true;
-            })
-            .map(m => ({ id: `M-${Math.random().toString(36).slice(2)}`, name: m.name.trim(), unit: m.unit || 'Nos.' }));
-        
-        if (newMaterials.length === 0) {
-            addNotification('info', 'No new materials to add. All names already exist or data is incomplete.');
-            return;
-        }
-
-        const newInventoryItems = newMaterials.map(m => ({ materialId: m.id, quantity: 0, threshold: 10 }));
-
-        const { error: matError } = await supabase.from('materials').insert(toSnakeCase(newMaterials));
-        if (matError) {
-            addNotification('warning', 'Failed to bulk add materials.');
-            console.error(matError);
-            return;
-        }
-        await supabase.from('inventory').insert(toSnakeCase(newInventoryItems));
-
-        addNotification('success', `${newMaterials.length} materials added successfully.`);
-        loadData();
-    };
-
-    const handleAddSite = async (name: string) => {
-        const newSite = { id: `S-${Math.random().toString(36).slice(2)}`, name };
-        await supabase.from('sites').insert(toSnakeCase([newSite]));
-        addNotification('success', 'Site/Client added successfully.');
-        loadData();
-    };
-    
-    const handleUpdateSite = async (site: Site) => {
-        await supabase.from('sites').update(toSnakeCase(site)).eq('id', site.id);
-        addNotification('success', 'Site/Client updated successfully.');
-        loadData();
-    };
-    
-    const handleDeleteSite = async (siteId: string) => {
-        await supabase.from('sites').delete().eq('id', siteId);
-        addNotification('success', 'Site/Client deleted successfully.');
-        loadData();
-    };
-
-    const handleBulkAddSites = async (data: { name: string }[]) => {
-        const existingNames = new Set(sites.map(s => s.name.toLowerCase()));
-        const seenInUpload = new Set<string>();
-
-        const newSites = data
-            .filter(s => {
-                if (!s.name || !s.name.trim()) return false;
-                const lowerCaseName = s.name.trim().toLowerCase();
-                if (existingNames.has(lowerCaseName) || seenInUpload.has(lowerCaseName)) {
-                    return false;
-                }
-                seenInUpload.add(lowerCaseName);
-                return true;
-            })
-            .map(s => ({ id: `S-${Math.random().toString(36).slice(2)}`, name: s.name.trim() }));
-        
-        if (newSites.length === 0) {
-            addNotification('info', 'No new sites to add. All names already exist or are empty.');
-            return;
-        }
-
-        const { error } = await supabase.from('sites').insert(toSnakeCase(newSites));
-        if (error) {
-            addNotification('warning', 'Failed to bulk add sites.');
-            console.error(error);
-        } else {
-            addNotification('success', `${newSites.length} sites added successfully.`);
-            loadData();
-        }
-    };
-    
-    const handleAddIntent = async (currentUser: User, intent: Omit<PurchaseIntent, 'id' | 'requestedOn' | 'status' | 'requestedBy'>) => {
-        const intentId = `PI-${Date.now()}`;
-        const { lineItems, ...intentData } = intent;
-        const newIntent = { ...intentData, id: intentId, requestedOn: new Date().toISOString().split('T')[0], status: PurchaseIntentStatus.Pending, requestedBy: currentUser.name || 'Unknown' };
-
-        await supabase.from('purchase_intents').insert(toSnakeCase([newIntent]));
-        const lineItemsWithIntentId = lineItems.map(li => ({ ...li, intentId, id: `INTLI-${Math.random().toString(36).slice(2)}` }));
-        await supabase.from('purchase_intent_line_items').insert(toSnakeCase(lineItemsWithIntentId));
-        
-        addNotification('success', 'Purchase intent submitted successfully.');
-        loadData();
-    };
-    
-    const handleApproveIntent = async (intentId: string, currentUser: User) => {
-        await supabase.from('purchase_intents').update({ status: PurchaseIntentStatus.Approved, reviewed_by: currentUser.name, reviewed_on: new Date().toISOString().split('T')[0] }).eq('id', intentId);
-        addNotification('success', 'Intent approved.');
-        loadData();
-    };
-    
-    const handleConfirmRejectIntent = async (currentUser: User, rejectingIntent: PurchaseIntent, reason: string) => {
-        await supabase.from('purchase_intents').update({ status: PurchaseIntentStatus.Rejected, rejection_reason: reason, reviewed_by: currentUser.name, reviewed_on: new Date().toISOString().split('T')[0] }).eq('id', rejectingIntent.id);
-        addNotification('info', 'Intent rejected.');
-        loadData();
-    };
+  const rejectPurchaseIntent = useCallback((intentId: string, reason: string, reviewedBy: string) => {
+    setPurchaseIntents(prev => prev.map(i => i.id === intentId ? {...i, status: PurchaseIntentStatus.Rejected, rejectionReason: reason, reviewedBy, reviewedOn: new Date().toISOString().split('T')[0]} : i));
+  }, []);
+  
+  const convertIntentToOrder = useCallback((intentId: string): Partial<PurchaseOrder> => {
+      const intent = purchaseIntents.find(i => i.id === intentId);
+      if (!intent) return {};
       
-    const handleCreateOrderFromIntent = (intent: PurchaseIntent) => {
-        // This remains a client-side operation until the order is actually submitted
-        const updatedIntent = { ...intent, status: PurchaseIntentStatus.Converted };
-        handleUpdateIntentStatus(updatedIntent); // Update the intent status in DB
-        
-        const initialLineItems: OrderLineItem[] = intent.lineItems.map(item => ({ id: `temp-LI-${item.id}`, materialId: item.materialId, quantity: item.quantity, unit: item.unit, site: item.site, specifications: `From Intent #${intent.id.substring(0, 6)}. ${item.notes || ''}`.trim(), rate: 0, gst: 18, brand: '', discount: 0, freight: 0, size: '' }));
-        return { initialData: { lineItems: initialLineItems, notes: intent.notes, intentId: intent.id }, updatedIntent };
-    };
+      const lineItems: Partial<OrderLineItem>[] = intent.lineItems.map(li => ({
+          materialId: li.materialId,
+          quantity: li.quantity,
+          unit: li.unit,
+          site: li.site,
+          specifications: li.notes || '',
+          gst: 18,
+      }));
+
+      setPurchaseIntents(prev => prev.map(i => i.id === intentId ? {...i, status: PurchaseIntentStatus.Converted} : i));
+
+      return {
+          lineItems: lineItems as OrderLineItem[],
+          notes: `Generated from Purchase Intent ${intent.id}. Reason: ${intent.notes}`,
+          intentId: intent.id,
+      };
+  }, [purchaseIntents]);
+
+  const setOpeningStock = useCallback((payload: { updatedStocks: { materialId: string; quantity: number, unit: string }[]; newItems: { name: string; unit: string; quantity: number }[] }) => {
+    const newMaterials = payload.newItems.map(item => {
+        const newMaterial: Material = { id: `M-new-${Date.now()}-${Math.random()}`, name: item.name, unit: item.unit };
+        return newMaterial;
+    });
     
-    const handleUpdateIntentStatus = async (intent: PurchaseIntent) => {
-        await supabase.from('purchase_intents').update({ status: intent.status }).eq('id', intent.id);
-        loadData();
-    };
-    
-    const handleSaveOpeningStock = async ({ updatedStocks, newItems }: { updatedStocks: { materialId: string, quantity: number }[], newItems: { name: string, unit: string, quantity: number }[] }) => {
-        
-        if (newItems.length > 0) {
-            const materialsToAdd = newItems.map(item => ({ id: `M-${Math.random().toString(36).slice(2)}`, name: item.name, unit: item.unit }));
-            const inventoryToAdd = materialsToAdd.map((mat, i) => ({ material_id: mat.id, quantity: newItems[i].quantity, threshold: 10 }));
-            await supabase.from('materials').insert(toSnakeCase(materialsToAdd));
-            await supabase.from('inventory').insert(inventoryToAdd);
-        }
-        
-        if(updatedStocks.length > 0) {
-            const updates = updatedStocks.map(stock => 
-                supabase.from('inventory').update({ quantity: stock.quantity }).eq('material_id', stock.materialId)
-            );
-            await Promise.all(updates);
-        }
-        
-        addNotification('success', 'Stock levels updated successfully.');
-        loadData();
-    };
+    if (newMaterials.length > 0) {
+        setMaterials(prev => [...prev, ...newMaterials]);
+    }
 
-    const handleBulkSetOpeningStock = async (data: { name: string, unit: string, quantity: number, threshold: number }[]) => {
-        const materialsMap = new Map(materials.map(m => [m.name.toLowerCase(), m.id]));
-        const materialsToCreate: any[] = [];
-        const inventoryToUpsert: any[] = [];
-
-        for (const item of data) {
-            if (!item.name || isNaN(Number(item.quantity)) || isNaN(Number(item.threshold))) continue;
-
-            const existingId = materialsMap.get(item.name.toLowerCase());
-            if (existingId) {
-                inventoryToUpsert.push({ material_id: existingId, quantity: item.quantity, threshold: item.threshold });
-            } else {
-                const newId = `M-${Math.random().toString(36).slice(2)}`;
-                materialsToCreate.push({ id: newId, name: item.name, unit: item.unit || 'units' });
-                inventoryToUpsert.push({ material_id: newId, quantity: item.quantity, threshold: item.threshold });
+    setInventory(prev => {
+        let updated = [...prev];
+        payload.updatedStocks.forEach(stock => {
+            const index = updated.findIndex(i => i.id === stock.materialId);
+            if(index > -1) {
+              updated[index].quantity = stock.quantity;
+              updated[index].unit = stock.unit; // Also update unit here
             }
+        });
+        payload.newItems.forEach((item, i) => {
+            updated.push({
+                id: newMaterials[i].id,
+                name: item.name,
+                unit: item.unit,
+                quantity: item.quantity,
+                threshold: 10 // default threshold
+            })
+        })
+        return updated;
+    });
+
+    setMaterials(prev => {
+      let updated = [...prev];
+      payload.updatedStocks.forEach(stock => {
+        const index = updated.findIndex(m => m.id === stock.materialId);
+        if (index > -1) {
+          updated[index].unit = stock.unit;
         }
-        
-        if (materialsToCreate.length > 0) {
-            await supabase.from('materials').insert(toSnakeCase(materialsToCreate));
-        }
+      });
+      return updated;
+    });
 
-        if (inventoryToUpsert.length > 0) {
-            const { error } = await supabase.from('inventory').upsert(inventoryToUpsert, { onConflict: 'material_id' });
-            if(error) {
-                addNotification('warning', 'Error updating some stock levels.');
-                console.error(error);
-            }
-        }
-        
-        addNotification('success', 'Bulk stock update processed.');
-        loadData();
-    };
+  }, []);
 
-    const sortedMaterials = useMemo(() => [...materials].sort((a, b) => a.name.localeCompare(b.name)), [materials]);
-    const sortedVendors = useMemo(() => [...vendors].sort((a, b) => a.name.localeCompare(b.name)), [vendors]);
-    const sortedSites = useMemo(() => [...sites].sort((a, b) => a.name.localeCompare(b.name)), [sites]);
-    const sortedInventory = useMemo(() => [...inventory].sort((a, b) => a.name.localeCompare(b.name)), [inventory]);
+  const addBulkStock = useCallback((data: { name: string; unit: string; quantity: number; threshold: number }[]) => {
+      let newMaterials: Material[] = [];
+      let newInventoryItems: InventoryItem[] = [];
+      const updatedInventory = [...inventory];
 
-    const contextValue = useMemo(() => ({
-        inventory: sortedInventory, 
-        orders, 
-        vendors: sortedVendors, 
-        materials: sortedMaterials, 
-        sites: sortedSites, 
-        issuances, 
-        purchaseIntents, 
-        isLoading, 
-        notifications, 
-        addNotification, 
-        removeNotification, 
-        handleAddOrder, 
-        handleUpdateOrder, 
-        handleApproveOrder, 
-        handleConfirmRejectOrder, 
-        handleUpdateOrderStatus, 
-        handleIssueMaterial, 
-        handleAddVendor, 
-        handleUpdateVendor, 
-        handleDeleteVendor, 
-        handleBulkAddVendors, 
-        handleAddMaterial, 
-        handleUpdateMaterial, 
-        handleDeleteMaterial, 
-        handleBulkAddMaterials, 
-        handleAddSite, 
-        handleUpdateSite, 
-        handleDeleteSite, 
-        handleBulkAddSites, 
-        handleAddIntent, 
-        handleApproveIntent, 
-        handleConfirmRejectIntent, 
-        handleCreateOrderFromIntent, 
-        handleSaveOpeningStock, 
-        handleBulkSetOpeningStock,
-    }), [sortedInventory, orders, sortedVendors, sortedMaterials, sortedSites, issuances, purchaseIntents, isLoading, notifications, loadData]);
+      data.forEach(item => {
+          const existingMaterial = materials.find(m => m.name.toLowerCase() === item.name.toLowerCase());
+          if (existingMaterial) {
+              const invIndex = updatedInventory.findIndex(i => i.id === existingMaterial.id);
+              if (invIndex > -1) {
+                  updatedInventory[invIndex] = { ...updatedInventory[invIndex], quantity: item.quantity, threshold: item.threshold, unit: item.unit };
+              }
+          } else {
+              const newMat: Material = { id: `M-bulk-${Date.now()}-${item.name}`, name: item.name, unit: item.unit };
+              newMaterials.push(newMat);
+              newInventoryItems.push({ ...newMat, quantity: item.quantity, threshold: item.threshold });
+          }
+      });
+      setMaterials(prev => [...prev, ...newMaterials]);
+      setInventory([...updatedInventory, ...newInventoryItems]);
+  }, [materials, inventory]);
+  
+  const addBulkMaterials = useCallback((data: { name: string, unit?: string }[]) => {
+    const newMaterials = data
+        .filter(d => !materials.some(m => m.name.toLowerCase() === d.name.toLowerCase()))
+        .map(d => ({ id: `M-bulk-${Date.now()}-${d.name}`, name: d.name, unit: d.unit || 'Nos.' }));
+    setMaterials(prev => [...prev, ...newMaterials]);
+  }, [materials]);
 
-    return (
-        <AppContext.Provider value={contextValue}>
-            {children}
-        </AppContext.Provider>
-    );
+  const addBulkVendors = useCallback((data: { name: string }[]) => {
+    const newVendors = data
+        .filter(d => !vendors.some(v => v.name.toLowerCase() === d.name.toLowerCase()))
+        .map(d => ({ id: `V-bulk-${Date.now()}-${d.name}`, name: d.name }));
+    setVendors(prev => [...prev, ...newVendors]);
+  }, [vendors]);
+
+  const addBulkSites = useCallback((data: { name: string }[]) => {
+    const newSites = data
+        .filter(d => !sites.some(s => s.name.toLowerCase() === d.name.toLowerCase()))
+        .map(d => ({ id: `S-bulk-${Date.now()}-${d.name}`, name: d.name }));
+    setSites(prev => [...prev, ...newSites]);
+  }, [sites]);
+
+  const updateInventoryItem = useCallback((itemId: string, updates: Partial<InventoryItem>) => {
+    setInventory(prev => prev.map(item => item.id === itemId ? { ...item, ...updates } : item));
+    if (updates.unit) {
+        setMaterials(prev => prev.map(mat => mat.id === itemId ? { ...mat, unit: updates.unit! } : mat));
+    }
+  }, []);
+
+
+  const value = {
+    materials, vendors, sites, inventory, orders, issuances, purchaseIntents, notifications,
+    addOrder, updateOrder, markOrderAsDelivered, approveOrder, rejectOrder, addVendor, updateVendor, deleteVendor,
+    addMaterial, updateMaterial, deleteMaterial, addSite, updateSite, deleteSite, issueMaterial,
+    addPurchaseIntent, approvePurchaseIntent, rejectPurchaseIntent, convertIntentToOrder, setOpeningStock, addBulkStock,
+    addBulkMaterials, addBulkVendors, addBulkSites, updateInventoryItem
+  };
+
+  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };
 
-// Custom hook to use the context
 export const useAppContext = () => {
-    const context = useContext(AppContext);
-    if (context === undefined) {
-        throw new Error('useAppContext must be used within an AppProvider');
-    }
-    return context;
+  const context = useContext(AppContext);
+  if (context === undefined) {
+    throw new Error('useAppContext must be used within an AppProvider');
+  }
+  return context;
 };

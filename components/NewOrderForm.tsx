@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { PurchaseOrder, Vendor, Priority, OrderStatus, OrderLineItem, Material, Site, User } from '../types';
 import { UNITS } from '../constants';
-// FIX: Updated icon import path to './icons' to resolve a filename casing conflict.
+// FIX: To resolve a filename casing conflict, all icon imports are standardized to use './icons'.
 import { PlusIcon, TrashIcon } from './icons';
 
 interface NewOrderFormProps {
@@ -18,6 +18,10 @@ interface NewOrderFormProps {
 type FormOrderLineItem = Partial<OrderLineItem> & { _materialNameInput?: string };
 
 const NewOrderForm: React.FC<NewOrderFormProps> = ({ onAddOrder, onClose, currentUser, currentUserRole, vendors, materials, sites, initialData }) => {
+  const sortedVendors = useMemo(() => [...vendors].sort((a, b) => a.name.localeCompare(b.name)), [vendors]);
+  const sortedMaterials = useMemo(() => [...materials].sort((a, b) => a.name.localeCompare(b.name)), [materials]);
+  const sortedSites = useMemo(() => [...sites].sort((a, b) => a.name.localeCompare(b.name)), [sites]);
+  
   const [vendorId, setVendorId] = useState<string>(initialData?.vendorId || '');
   const [vendorNameInput, setVendorNameInput] = useState<string>(
     initialData?.vendorId ? vendors.find(v => v.id === initialData.vendorId)?.name || '' : ''
@@ -162,7 +166,7 @@ const NewOrderForm: React.FC<NewOrderFormProps> = ({ onAddOrder, onClose, curren
                     required
                 />
                 <datalist id="vendors-list">
-                    {vendors.map(v => <option key={v.id} value={v.name} />)}
+                    {sortedVendors.map(v => <option key={v.id} value={v.name} />)}
                 </datalist>
             </div>
             <div>
@@ -204,7 +208,7 @@ const NewOrderForm: React.FC<NewOrderFormProps> = ({ onAddOrder, onClose, curren
                         required
                     />
                     <datalist id="materials-list">
-                        {materials.map(m => <option key={m.id} value={m.name} />)}
+                        {sortedMaterials.map(m => <option key={m.id} value={m.name} />)}
                     </datalist>
                 </div>
                 <div>
@@ -222,7 +226,7 @@ const NewOrderForm: React.FC<NewOrderFormProps> = ({ onAddOrder, onClose, curren
                         list="sites-list"
                     />
                     <datalist id="sites-list">
-                        {sites.map(site => <option key={site.id} value={site.name} />)}
+                        {sortedSites.map(site => <option key={site.id} value={site.name} />)}
                     </datalist>
                 </div>
             </div>
