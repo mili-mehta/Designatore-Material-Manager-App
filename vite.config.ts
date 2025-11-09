@@ -3,9 +3,11 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig({
-  base: '/Designatore-Material-Manager-App/',
+  // Set the base path to root for standard Cloud Run deployment.
+  base: '/',
   build: {
-    outDir: 'docs',
+    // Revert the output directory to the Vite default 'dist'.
+    outDir: 'dist',
   },
   server: {
     // Respect the PORT environment variable for local development flexibility
