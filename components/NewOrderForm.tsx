@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { PurchaseOrder, Vendor, Priority, OrderStatus, OrderLineItem, Material, Site, User } from '../types';
 import { UNITS } from '../constants';
-// FIX: Changed icon import path from './Icons' to './icons' to resolve filename casing conflict.
-import { PlusIcon, TrashIcon } from './icons';
+// FIX: Changed icon import path from './icons' to './Icons' to resolve filename casing conflict.
+import { PlusIcon, TrashIcon } from './Icons';
 
 interface NewOrderFormProps {
   onAddOrder: (order: Omit<PurchaseOrder, 'id'>) => void;
@@ -15,12 +15,22 @@ interface NewOrderFormProps {
   initialData?: Partial<PurchaseOrder>;
 }
 
+type FormOrderLineItem = Partial<OrderLineItem> & { _materialNameInput?: string };
+
 const NewOrderForm: React.FC<NewOrderFormProps> = ({ onAddOrder, onClose, currentUser, currentUserRole, vendors, materials, sites, initialData }) => {
-  const [vendorId, setVendorId] = useState<string>(initialData?.vendorId?.toString() || '');
+  const [vendorId, setVendorId] = useState<string>(initialData?.vendorId || '');
+  const [vendorNameInput, setVendorNameInput] = useState<string>(
+    initialData?.vendorId ? vendors.find(v => v.id === initialData.vendorId)?.name || '' : ''
+  );
   const [priority, setPriority] = useState<Priority>(initialData?.priority || Priority.Low);
   const [expectedDelivery, setExpectedDelivery] = useState<string>('');
   const [notes, setNotes] = useState(initialData?.notes || '');
-  const [lineItems, setLineItems] = useState<Partial<OrderLineItem>[]>(initialData?.lineItems || [{}]);
+  const [lineItems, setLineItems] = useState<FormOrderLineItem[]>(
+      initialData?.lineItems?.map(li => ({
+        ...li,
+        _materialNameInput: materials.find(m => m.id === li.materialId)?.name || ''
+    })) || [{ _materialNameInput: '' }]
+  );
   
   useEffect(() => {
     // Set a default delivery date if not provided by initialData
@@ -31,21 +41,34 @@ const NewOrderForm: React.FC<NewOrderFormProps> = ({ onAddOrder, onClose, curren
     }
   }, [initialData]);
 
-  const handleLineItemChange = (index: number, field: keyof OrderLineItem, value: any) => {
+  const handleVendorChange = (name: string) => {
+    setVendorNameInput(name);
+    const vendor = vendors.find(v => v.name === name);
+    setVendorId(vendor ? vendor.id : '');
+  };
+
+  const handleLineItemChange = (index: number, field: keyof FormOrderLineItem, value: any) => {
     const updatedLineItems = [...lineItems];
-    updatedLineItems[index] = { ...updatedLineItems[index], [field]: value };
-    
-    if (field === 'materialId') {
-        const material = materials.find(m => m.id === value);
+    const currentItem = { ...updatedLineItems[index] };
+
+    if (field === '_materialNameInput') {
+        currentItem._materialNameInput = value;
+        const material = materials.find(m => m.name === value);
         if (material) {
-            updatedLineItems[index].unit = material.unit;
+            currentItem.materialId = material.id;
+            currentItem.unit = material.unit;
+        } else {
+            currentItem.materialId = undefined;
         }
+    } else {
+        (currentItem as any)[field] = value;
     }
-    
+
+    updatedLineItems[index] = currentItem;
     setLineItems(updatedLineItems);
   };
 
-  const addLineItem = () => setLineItems([...lineItems, {}]);
+  const addLineItem = () => setLineItems([...lineItems, { _materialNameInput: '' }]);
   const removeLineItem = (index: number) => {
     if (lineItems.length > 1) {
       setLineItems(lineItems.filter((_, i) => i !== index));
@@ -129,10 +152,18 @@ const NewOrderForm: React.FC<NewOrderFormProps> = ({ onAddOrder, onClose, curren
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
                 <label className={labelClasses}>Vendor</label>
-                <select value={vendorId} onChange={e => setVendorId(e.target.value)} className={inputClasses} required>
-                    <option value="">Select Vendor</option>
-                    {vendors.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
-                </select>
+                <input
+                    type="text"
+                    list="vendors-list"
+                    value={vendorNameInput}
+                    onChange={e => handleVendorChange(e.target.value)}
+                    className={inputClasses}
+                    placeholder="Select or Search Vendor"
+                    required
+                />
+                <datalist id="vendors-list">
+                    {vendors.map(v => <option key={v.id} value={v.name} />)}
+                </datalist>
             </div>
             <div>
                 <label className={labelClasses}>Priority</label>
@@ -163,10 +194,18 @@ const NewOrderForm: React.FC<NewOrderFormProps> = ({ onAddOrder, onClose, curren
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                  <div>
                     <label className={smallLabelClasses}>Material</label>
-                    <select value={item.materialId || ''} onChange={e => handleLineItemChange(index, 'materialId', e.target.value)} className={smallInputClasses} required>
-                        <option value="">Select Material</option>
-                         {materials.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-                    </select>
+                    <input
+                        type="text"
+                        list="materials-list"
+                        value={item._materialNameInput || ''}
+                        onChange={e => handleLineItemChange(index, '_materialNameInput', e.target.value)}
+                        placeholder="Select or Search Material"
+                        className={smallInputClasses}
+                        required
+                    />
+                    <datalist id="materials-list">
+                        {materials.map(m => <option key={m.id} value={m.name} />)}
+                    </datalist>
                 </div>
                 <div>
                     <label className={smallLabelClasses}>Brand</label>

@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { MaterialIssuance, Site, Material } from '../types';
-// FIX: Changed icon import path from './Icons' to './icons' to resolve filename casing conflict.
-import { MagnifyingGlassIcon } from './icons';
+// FIX: Changed icon import path from './icons' to './Icons' to resolve filename casing conflict.
+import { MagnifyingGlassIcon } from './Icons';
 
 interface IssuanceHistoryProps {
     issuances: MaterialIssuance[];

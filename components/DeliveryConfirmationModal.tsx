@@ -1,8 +1,8 @@
 import React from 'react';
 import { PurchaseOrder, Material, Vendor } from '../types';
 import Modal from './Modal';
-// FIX: Changed icon import path from './Icons' to './icons' to resolve filename casing conflict.
-import { CheckCircleIcon } from './icons';
+// FIX: Changed icon import path from './icons' to './Icons' to resolve filename casing conflict.
+import { CheckCircleIcon } from './Icons';
 
 interface DeliveryConfirmationModalProps {
   isOpen: boolean;
