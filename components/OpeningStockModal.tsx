@@ -3,8 +3,8 @@ import { Material, InventoryItem } from '../types';
 import Modal from './Modal';
 import { translations } from '../translations';
 import { UNITS } from '../constants';
-// FIX: Updated icon import path to './icons' to resolve a filename casing conflict.
-import { PlusIcon, TrashIcon } from './icons';
+// FIX: Updated icon import path to './Icons' to resolve a filename casing conflict.
+import { PlusIcon, TrashIcon } from './Icons';
 import ExcelUpload from './ExcelUpload';
 
 // A simple i18n helper

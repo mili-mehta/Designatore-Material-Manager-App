@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Site, PurchaseOrder } from '../types';
-// FIX: Updated icon import path to './icons' to resolve a filename casing conflict.
-import { PencilIcon, TrashIcon } from './icons';
+// FIX: Updated icon import path to './Icons' to resolve a filename casing conflict.
+import { PencilIcon, TrashIcon } from './Icons';
 import Modal from './Modal';
 import ExcelUpload from './ExcelUpload';
 
