@@ -1,8 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { PurchaseOrder, Vendor, Priority, OrderLineItem, Material, Site } from '../types';
 import { UNITS } from '../constants';
-// FIX: To resolve a filename casing conflict, all icon imports are standardized to use './icons'.
-import { PlusIcon, TrashIcon } from './icons';
+import { PlusIcon, TrashIcon, ChevronDownIcon } from './Icons';
 
 interface EditOrderFormProps {
   order: PurchaseOrder;
@@ -33,6 +32,13 @@ const EditOrderForm: React.FC<EditOrderFormProps> = ({ order, onUpdateOrder, onC
         _materialNameInput: materials.find(m => m.id === li.materialId)?.name || ''
     }))
   );
+  
+  const [openSections, setOpenSections] = useState({ details: true, notes: !!order.notes });
+
+
+  const toggleSection = (section: 'details' | 'notes') => {
+    setOpenSections(prev => ({ ...prev, [section]: !prev[section] }));
+  };
 
   const handleVendorChange = (name: string) => {
     setVendorNameInput(name);
@@ -126,53 +132,55 @@ const EditOrderForm: React.FC<EditOrderFormProps> = ({ order, onUpdateOrder, onC
     onClose();
   };
 
-  const inputClasses = "w-full bg-gray-100 border-gray-300 rounded-md p-2 text-gray-800 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition shadow-sm";
+  const inputClasses = "w-full bg-white border-gray-300 rounded-md p-2 text-gray-800 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition shadow-sm";
   const smallInputClasses = `text-sm ${inputClasses}`;
   const labelClasses = "block mb-1.5 text-sm font-medium text-gray-600";
   const smallLabelClasses = "block mb-1 text-xs font-medium text-gray-500";
 
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
-      {/* Order Header */}
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Order Details</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-                <label className={labelClasses}>Vendor</label>
-                 <input
-                    type="text"
-                    list="vendors-list"
-                    value={vendorNameInput}
-                    onChange={e => handleVendorChange(e.target.value)}
-                    className={inputClasses}
-                    placeholder="Select or Search Vendor"
-                    required
-                />
-                <datalist id="vendors-list">
-                    {sortedVendors.map(v => <option key={v.id} value={v.name} />)}
-                </datalist>
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="border border-gray-200 rounded-lg">
+        <button type="button" onClick={() => toggleSection('details')} className="w-full flex justify-between items-center p-4 bg-gray-50 rounded-t-lg">
+          <h3 className="text-md font-semibold text-gray-800">Order Details</h3>
+          <ChevronDownIcon className={`w-5 h-5 text-gray-500 transition-transform ${openSections.details ? 'rotate-180' : ''}`} />
+        </button>
+        {openSections.details && (
+            <div className="p-4 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div>
+                        <label className={labelClasses}>Vendor</label>
+                        <input
+                            type="text"
+                            list="vendors-list"
+                            value={vendorNameInput}
+                            onChange={e => handleVendorChange(e.target.value)}
+                            className={inputClasses}
+                            placeholder="Select or Search Vendor"
+                            required
+                        />
+                        <datalist id="vendors-list">
+                            {sortedVendors.map(v => <option key={v.id} value={v.name} />)}
+                        </datalist>
+                    </div>
+                    <div>
+                        <label className={labelClasses}>Priority</label>
+                        <select value={priority} onChange={e => setPriority(e.target.value as Priority)} className={inputClasses}>
+                            {/* FIX: Explicitly cast value to string to satisfy React's key/value prop types. */}
+                            {Object.values(Priority).map(p => <option key={String(p)} value={String(p)}>{p}</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label className={labelClasses}>Expected Delivery</label>
+                        <input type="date" value={expectedDelivery} onChange={e => setExpectedDelivery(e.target.value)} className={inputClasses} min={new Date().toISOString().split('T')[0]} required />
+                    </div>
+                </div>
             </div>
-            <div>
-                <label className={labelClasses}>Priority</label>
-                <select value={priority} onChange={e => setPriority(e.target.value as Priority)} className={inputClasses}>
-                    {Object.values(Priority).map(p => <option key={p} value={p}>{p}</option>)}
-                </select>
-            </div>
-            <div>
-                <label className={labelClasses}>Expected Delivery</label>
-                <input type="date" value={expectedDelivery} onChange={e => setExpectedDelivery(e.target.value)} className={inputClasses} min={new Date().toISOString().split('T')[0]} required />
-            </div>
-        </div>
-        <div>
-            <label className={labelClasses}>Notes</label>
-            <textarea value={notes} onChange={e => setNotes(e.target.value)} className={`${inputClasses} min-h-[80px]`} placeholder="Any overall notes for this purchase order..."></textarea>
-        </div>
+        )}
       </div>
 
-      {/* Line Items */}
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-gray-800 border-b pb-2">Order Items</h3>
+        <h3 className="text-md font-semibold text-gray-800">Order Items</h3>
         {lineItems.map((item, index) => (
           <div key={index} className="p-5 bg-gray-50 rounded-lg space-y-4 relative border border-gray-200">
              <button type="button" onClick={() => removeLineItem(index)} className="absolute top-2 right-2 bg-red-100 text-red-600 rounded-full p-1 hover:bg-red-200 disabled:bg-gray-200 disabled:text-gray-400" disabled={lineItems.length <= 1} title="Remove Item">
@@ -267,7 +275,18 @@ const EditOrderForm: React.FC<EditOrderFormProps> = ({ order, onUpdateOrder, onC
         <PlusIcon className="w-5 h-5" /> Add Another Material
       </button>
 
-      {/* Footer */}
+      <div className="border border-gray-200 rounded-lg">
+        <button type="button" onClick={() => toggleSection('notes')} className="w-full flex justify-between items-center p-4 bg-gray-50 rounded-t-lg">
+          <h3 className="text-md font-semibold text-gray-800">Notes</h3>
+          <ChevronDownIcon className={`w-5 h-5 text-gray-500 transition-transform ${openSections.notes ? 'rotate-180' : ''}`} />
+        </button>
+        {openSections.notes && (
+          <div className="p-4">
+            <textarea value={notes} onChange={e => setNotes(e.target.value)} className={`${inputClasses} min-h-[80px]`} placeholder="Any overall notes for this purchase order..."></textarea>
+          </div>
+        )}
+      </div>
+
        <div className="flex justify-between items-center pt-6 border-t border-gray-200">
         <div>
             <span className="text-sm font-medium text-gray-600">Total Invoice Amount:</span>

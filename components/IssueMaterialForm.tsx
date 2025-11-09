@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { InventoryItem, Site, User } from '../types';
 import { UNITS } from '../constants';
-import { PlusIcon, TrashIcon } from './icons';
+import { PlusIcon, TrashIcon } from './Icons';
 
 interface IssueMaterialFormProps {
   onIssue: (items: {

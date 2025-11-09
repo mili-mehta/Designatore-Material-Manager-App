@@ -355,7 +355,8 @@ const Reports: React.FC<ReportsProps> = ({ orders, vendors, materials, currentUs
                                     {reportData.map((row, index) => (
                                         <tr key={index} className="border-b border-gray-200 last:border-b-0 hover:bg-gray-50/50">
                                             {reportHeaders.map(header => (
-                                                <td key={header} className="p-4 text-sm text-gray-600 whitespace-pre-wrap">{row[header]}</td>
+                                                /* FIX: Cast cell content to string to ensure it's a valid React child and prevent potential type errors. */
+                                                <td key={header} className="p-4 text-sm text-gray-600 whitespace-pre-wrap">{String(row[header] ?? '')}</td>
                                             ))}
                                         </tr>
                                     ))}

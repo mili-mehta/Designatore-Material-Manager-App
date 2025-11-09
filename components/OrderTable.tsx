@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { PurchaseOrder, OrderStatus, Priority, Vendor, Material, User } from '../types';
-// FIX: To resolve a filename casing conflict, all icon imports are standardized to use './icons'.
-import { CheckCircleIcon, MagnifyingGlassIcon, PencilIcon, TrashIcon, HandThumbUpIcon, HandThumbDownIcon } from './icons';
+import { CheckCircleIcon, MagnifyingGlassIcon, PencilIcon, TrashIcon, HandThumbUpIcon, HandThumbDownIcon, ArchiveBoxIcon } from './Icons';
+import EmptyState from './EmptyState';
 
 interface OrderTableProps {
   orders: PurchaseOrder[];
@@ -22,9 +22,7 @@ const OrderTable: React.FC<OrderTableProps> = ({ orders, vendors, materials, onU
 
   const handleCancelOrder = (e: React.MouseEvent, orderId: string) => {
     e.stopPropagation();
-    if (window.confirm('Are you sure you want to cancel this order?')) {
-      onUpdateOrderStatus(orderId, OrderStatus.Cancelled);
-    }
+    onUpdateOrderStatus(orderId, OrderStatus.Cancelled);
   };
   
   const handleEditClick = (e: React.MouseEvent, order: PurchaseOrder) => {
@@ -46,7 +44,7 @@ const OrderTable: React.FC<OrderTableProps> = ({ orders, vendors, materials, onU
       case OrderStatus.Delivered: return 'bg-green-100 text-green-700';
       case OrderStatus.Pending: return 'bg-yellow-100 text-yellow-700';
       case OrderStatus.AwaitingApproval: return 'bg-sky-100 text-sky-700';
-      case OrderStatus.Cancelled: return 'bg-gray-100 text-gray-700';
+      case OrderStatus.Cancelled: return 'bg-gray-200 text-gray-600';
       default: return 'bg-gray-100 text-gray-700';
     }
   };
@@ -67,10 +65,10 @@ const OrderTable: React.FC<OrderTableProps> = ({ orders, vendors, materials, onU
   });
 
   return (
-    <div className="bg-white rounded-xl shadow-sm">
-      <div className="flex justify-between items-center p-6">
+    <div className="bg-white rounded-xl shadow-md">
+      <div className="flex flex-col md:flex-row justify-between items-center p-6 gap-4">
         <h2 className="text-xl font-semibold text-gray-900">Purchase Orders</h2>
-        <div className="relative w-full max-w-xs">
+        <div className="relative w-full md:max-w-xs">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
             <MagnifyingGlassIcon className="w-5 h-5 text-gray-400" />
           </div>
@@ -79,7 +77,7 @@ const OrderTable: React.FC<OrderTableProps> = ({ orders, vendors, materials, onU
             placeholder="Search orders..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-gray-100 border-transparent rounded-full py-2 pl-10 pr-4 text-gray-800 focus:ring-2 focus:ring-primary-500 focus:bg-white focus:border-primary-500 transition"
+            className="w-full bg-gray-50 border-gray-300 rounded-full py-2 pl-10 pr-4 text-gray-800 focus:ring-2 focus:ring-primary-500 focus:bg-white focus:border-primary-500 transition"
           />
         </div>
       </div>
@@ -103,7 +101,7 @@ const OrderTable: React.FC<OrderTableProps> = ({ orders, vendors, materials, onU
                 const firstMaterialName = materials.find(m => m.id === order.lineItems[0]?.materialId)?.name;
 
                 return (
-                    <tr key={order.id} onClick={() => onViewOrder(order)} className="border-b border-gray-200 last:border-b-0 hover:bg-gray-50/50 transition-colors cursor-pointer">
+                    <tr key={order.id} onClick={() => onViewOrder(order)} className="border-b border-gray-200 last:border-b-0 hover:bg-gray-50 transition-colors cursor-pointer">
                         <td className="p-4">
                             <div className="font-medium text-gray-800">{firstMaterialName}</div>
                             {order.lineItems.length > 1 && <div className="text-sm text-gray-500">+ {order.lineItems.length - 1} more</div>}
@@ -133,40 +131,36 @@ const OrderTable: React.FC<OrderTableProps> = ({ orders, vendors, materials, onU
                         <td className="p-4 text-sm text-gray-600">{order.raisedBy}</td>
                         <td className="p-4 text-center">
                             <div className="flex items-center justify-center gap-2 flex-wrap">
-                                {/* Manager: Approve/Reject */}
                                 {currentUserRole === 'manager' && order.status === OrderStatus.AwaitingApproval && onApproveOrder && onRejectOrder && (
                                     <>
-                                        <button onClick={(e) => { e.stopPropagation(); onApproveOrder(order.id); }} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 rounded-md transition shadow-sm">
-                                            <HandThumbUpIcon className="w-4 h-4" /> Approve
+                                        <button onClick={(e) => { e.stopPropagation(); onApproveOrder(order.id); }} className="p-1.5 text-green-500 bg-green-100 hover:bg-green-200 rounded-full transition" title="Approve">
+                                            <HandThumbUpIcon className="w-4 h-4" />
                                         </button>
-                                        <button onClick={(e) => { e.stopPropagation(); onRejectOrder(order); }} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-md transition shadow-sm">
-                                            <HandThumbDownIcon className="w-4 h-4" /> Reject
+                                        <button onClick={(e) => { e.stopPropagation(); onRejectOrder(order); }} className="p-1.5 text-red-500 bg-red-100 hover:bg-red-200 rounded-full transition" title="Reject">
+                                            <HandThumbDownIcon className="w-4 h-4" />
                                         </button>
                                     </>
                                 )}
 
-                                {/* Edit Action */}
                                 {( (currentUserRole === 'manager' && order.status === OrderStatus.Pending) ||
-                                   (currentUserRole === 'purchaser' && order.raisedBy === currentUserName && [OrderStatus.Pending, OrderStatus.AwaitingApproval, OrderStatus.Cancelled].includes(order.status))
+                                   (currentUserRole === 'purchaser' && order.raisedBy === currentUserName && [OrderStatus.Pending, OrderStatus.AwaitingApproval].includes(order.status))
                                 ) && (
-                                    <button onClick={(e) => handleEditClick(e, order)} className="text-gray-400 hover:text-primary-600 transition" title="Edit">
-                                        <PencilIcon className="w-5 h-5" />
+                                    <button onClick={(e) => handleEditClick(e, order)} className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-full transition" title="Edit">
+                                        <PencilIcon className="w-4 h-4" />
                                     </button>
                                 )}
 
-                                {/* Mark as Delivered Action - now only for manager */}
                                 {currentUserRole === 'manager' && order.status === OrderStatus.Pending && (
-                                    <button onClick={(e) => { e.stopPropagation(); onConfirmDelivery(order); }} className="text-gray-400 hover:text-green-600 transition" title="Mark as Delivered">
-                                        <CheckCircleIcon className="w-5 h-5" />
+                                    <button onClick={(e) => { e.stopPropagation(); onConfirmDelivery(order); }} className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-full transition" title="Mark as Delivered">
+                                        <CheckCircleIcon className="w-4 h-4" />
                                     </button>
                                 )}
                                 
-                                {/* Cancel Action */}
                                 {( (currentUserRole === 'manager' && order.status === OrderStatus.Pending) ||
                                    (currentUserRole === 'purchaser' && order.raisedBy === currentUserName && order.status === OrderStatus.Pending)
                                 ) && (
-                                    <button onClick={(e) => handleCancelOrder(e, order.id)} className="text-gray-400 hover:text-red-600 transition" title="Cancel Order">
-                                        <TrashIcon className="w-5 h-5" />
+                                    <button onClick={(e) => handleCancelOrder(e, order.id)} className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-full transition" title="Cancel Order">
+                                        <TrashIcon className="w-4 h-4" />
                                     </button>
                                 )}
                             </div>
@@ -176,6 +170,13 @@ const OrderTable: React.FC<OrderTableProps> = ({ orders, vendors, materials, onU
             })}
           </tbody>
         </table>
+        {filteredOrders.length === 0 && (
+          <EmptyState
+            icon={<ArchiveBoxIcon className="w-12 h-12 text-gray-400" />}
+            title="No Purchase Orders"
+            message={searchTerm ? "Your search did not return any orders." : "There are no active purchase orders to display."}
+          />
+        )}
       </div>
     </div>
   );

@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { InventoryItem } from '../types';
-import { MagnifyingGlassIcon, PencilIcon, CheckCircleIcon, XMarkIcon } from './icons';
+import { MagnifyingGlassIcon, PencilIcon, CheckCircleIcon, XMarkIcon, CubeIcon } from './Icons';
 import { UNITS } from '../constants';
+import EmptyState from './EmptyState';
 
 interface InventoryTableProps {
   inventory: InventoryItem[];
@@ -47,10 +48,10 @@ const InventoryTable: React.FC<InventoryTableProps> = ({ inventory, onUpdateItem
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-sm">
-        <div className="flex justify-between items-center p-6">
+    <div className="bg-white rounded-xl shadow-md">
+        <div className="flex flex-col md:flex-row justify-between items-center p-6 gap-4">
             <h2 className="text-xl font-semibold text-gray-900">Inventory Status</h2>
-            <div className="relative w-full max-w-xs">
+            <div className="relative w-full md:max-w-xs">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <MagnifyingGlassIcon className="w-5 h-5 text-gray-400" />
               </div>
@@ -59,7 +60,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({ inventory, onUpdateItem
                   placeholder="Search materials..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full bg-gray-100 border-transparent rounded-full py-2 pl-10 pr-4 text-gray-800 focus:ring-2 focus:ring-primary-500 focus:bg-white focus:border-primary-500 transition"
+                  className="w-full bg-gray-50 border-gray-300 rounded-full py-2 pl-10 pr-4 text-gray-800 focus:ring-2 focus:ring-primary-500 focus:bg-white focus:border-primary-500 transition"
               />
             </div>
         </div>
@@ -81,7 +82,7 @@ const InventoryTable: React.FC<InventoryTableProps> = ({ inventory, onUpdateItem
               const isEditing = editingItemId === item.id;
 
               return (
-                <tr key={item.id} className={`border-b border-gray-200 last:border-b-0 transition-colors ${isEditing ? 'bg-primary-50' : 'hover:bg-gray-50/50'}`}>
+                <tr key={item.id} className={`border-b border-gray-200 last:border-b-0 transition-colors ${isEditing ? 'bg-primary-50' : 'hover:bg-gray-50'}`}>
                   <td className="p-4 font-medium text-gray-800">{item.name}</td>
                   <td className={`p-4 text-right font-semibold ${isLowStock ? 'text-red-600' : 'text-gray-800'}`}>{item.quantity}</td>
                   <td className="p-4 text-right text-gray-600">
@@ -137,6 +138,13 @@ const InventoryTable: React.FC<InventoryTableProps> = ({ inventory, onUpdateItem
             })}
           </tbody>
         </table>
+        {filteredInventory.length === 0 && (
+            <EmptyState
+                icon={<CubeIcon className="w-12 h-12 text-gray-400" />}
+                title="No Materials Found"
+                message={searchTerm ? "Your search did not match any materials." : "There are no materials in the inventory yet."}
+            />
+        )}
       </div>
     </div>
   );

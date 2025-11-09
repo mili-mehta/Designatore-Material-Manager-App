@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Vendor, PurchaseOrder } from '../types';
-// FIX: To resolve a filename casing conflict, all icon imports are standardized to use './icons'.
-import { PencilIcon, TrashIcon } from './icons';
+import { PencilIcon, TrashIcon } from './Icons';
 import Modal from './Modal';
 import ExcelUpload from './ExcelUpload';
+import { useAppContext } from '../context/AppContext';
 
 interface VendorManagementModalProps {
   isOpen: boolean;
@@ -28,6 +28,7 @@ const VendorManagementModal: React.FC<VendorManagementModalProps> = ({
 }) => {
   const [isEditing, setIsEditing] = useState<Vendor | null>(null);
   const [vendorName, setVendorName] = useState('');
+  const { addNotification } = useAppContext();
   
   useEffect(() => {
     if (!isOpen) {
@@ -62,7 +63,7 @@ const VendorManagementModal: React.FC<VendorManagementModalProps> = ({
   const handleDelete = (vendorId: string) => {
     const isVendorInUse = orders.some(order => order.vendorId === vendorId);
     if (isVendorInUse) {
-      alert('This vendor is associated with existing orders and cannot be deleted.');
+      addNotification('warning', 'This vendor is associated with existing orders and cannot be deleted.');
       return;
     }
 
@@ -71,7 +72,7 @@ const VendorManagementModal: React.FC<VendorManagementModalProps> = ({
     }
   };
 
-  const inputClasses = "w-full bg-gray-100 border-gray-300 rounded-md p-2 text-gray-800 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition shadow-sm";
+  const inputClasses = "w-full bg-gray-50 border-gray-300 rounded-md p-2 text-gray-800 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition shadow-sm";
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Manage Vendors">
@@ -82,7 +83,6 @@ const VendorManagementModal: React.FC<VendorManagementModalProps> = ({
                 instructions="Upload an Excel file with a single column header: <b>name</b>."
             />
 
-            {/* Add/Edit Form */}
             <form onSubmit={handleSubmit} className="pt-6 border-t border-gray-200 space-y-3">
                 <h3 className="text-base font-semibold text-gray-800">{isEditing ? 'Edit Vendor' : 'Add a New Vendor'}</h3>
                 <div>
@@ -109,7 +109,6 @@ const VendorManagementModal: React.FC<VendorManagementModalProps> = ({
                 </div>
             </form>
 
-            {/* Vendor List */}
             <div className="space-y-2 max-h-60 overflow-y-auto pr-2 -mr-2">
                 {vendors.map(vendor => (
                 <div key={vendor.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-200">

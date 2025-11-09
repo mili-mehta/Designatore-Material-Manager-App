@@ -4,6 +4,7 @@ import Header from './components/Header';
 import Login from './components/Login';
 import Dashboard from './components/Dashboard';
 import { AppProvider } from './context/AppContext';
+import NotificationCenter from './components/NotificationCenter';
 
 const App: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -18,7 +19,7 @@ const App: React.FC = () => {
 
   return (
     <AppProvider>
-      <div className="min-h-screen bg-gray-50 text-gray-800 font-sans">
+      <div className="min-h-screen bg-gray-100 text-gray-800 font-sans">
         {currentUser ? (
           <>
             <Header user={currentUser} onLogout={handleLogout} />
@@ -28,6 +29,7 @@ const App: React.FC = () => {
           <Login onLoginSuccess={handleLogin} />
         )}
       </div>
+      <NotificationCenter />
     </AppProvider>
   );
 };

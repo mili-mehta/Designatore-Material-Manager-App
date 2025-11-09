@@ -1,15 +1,13 @@
-import React, { useState, useContext, useMemo } from 'react';
-import { User, PurchaseOrder, OrderStatus, PurchaseIntent, PurchaseIntentStatus, Vendor, Material, Site, InventoryItem } from '../types';
-import { AppContext, useAppContext } from '../context/AppContext';
+import React, { useState, useMemo } from 'react';
+import { User, PurchaseOrder, PurchaseIntent, Vendor, Material, Site, InventoryItem } from '../types';
+import { useAppContext } from '../context/AppContext';
 import InventoryTable from './InventoryTable';
-import OrderTable from './OrderTable';
 import NewOrderForm from './NewOrderForm';
 import EditOrderForm from './EditOrderForm';
 import OrderDetailsModal from './OrderDetailsModal';
 import Modal from './Modal';
 import VendorManagementModal from './VendorManagementModal';
 import MaterialManagementModal from './MaterialManagementModal';
-import LowStockAlerts from './LowStockAlerts';
 import OrderHistory from './OrderHistory';
 import SiteManagementModal from './SiteManagementModal';
 import Reports from './Reports';
@@ -21,6 +19,7 @@ import PurchaseIntentsTable from './PurchaseIntentsTable';
 import RejectionModal from './RejectionModal';
 import OpeningStockModal from './OpeningStockModal';
 import DeliveryConfirmationModal from './DeliveryConfirmationModal';
+import DashboardHome from './DashboardHome';
 
 import { 
     Squares2X2Icon, 
@@ -31,11 +30,14 @@ import {
     ReceiptRefundIcon,
     DocumentPlusIcon,
     ClipboardDocumentCheckIcon,
-    // FIX: Added PlusIcon to the import list to resolve 'Cannot find name' error.
     PlusIcon,
     Bars3Icon,
-    XMarkIcon
-} from './icons';
+    XMarkIcon,
+    ArrowUpTrayIcon,
+    UsersIcon,
+    CubeIcon,
+    TruckIcon
+} from './Icons';
 
 
 type View = 'dashboard' | 'inventory' | 'order_history' | 'reports' | 'issuance_history' | 'intents_all';
@@ -74,6 +76,7 @@ const Dashboard: React.FC<{ currentUser: User }> = ({ currentUser }) => {
         addBulkSites,
         markOrderAsDelivered,
         updateInventoryItem,
+        addNotification
     } = useAppContext();
     
     const [view, setView] = useState<View>('dashboard');
@@ -91,7 +94,6 @@ const Dashboard: React.FC<{ currentUser: User }> = ({ currentUser }) => {
     const [isStockModalOpen, setIsStockModalOpen] = useState(false);
     const [isDeliveryConfirmModalOpen, setIsDeliveryConfirmModalOpen] = useState(false);
 
-    // FIX: Changed state to allow Partial<PurchaseOrder> to handle creating orders from intents, which are partial.
     const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | Partial<PurchaseOrder> | null>(null);
     const [selectedIntent, setSelectedIntent] = useState<PurchaseIntent | null>(null);
 
@@ -111,7 +113,6 @@ const Dashboard: React.FC<{ currentUser: User }> = ({ currentUser }) => {
     };
 
     const handleRejectOrderSubmit = (reason: string) => {
-        // FIX: Added a guard to ensure selectedOrder is a full PurchaseOrder before accessing its id.
         if (selectedOrder && 'id' in selectedOrder) {
             rejectOrder(selectedOrder.id, reason, currentUser.name || 'Manager');
         }
@@ -121,7 +122,7 @@ const Dashboard: React.FC<{ currentUser: User }> = ({ currentUser }) => {
 
     const handleCreateOrderFromIntent = (intent: PurchaseIntent) => {
         const orderData = convertIntentToOrder(intent.id);
-        setSelectedOrder(orderData); // This is a partial PO
+        setSelectedOrder(orderData);
         setIsNewOrderModalOpen(true);
     };
     
@@ -144,7 +145,6 @@ const Dashboard: React.FC<{ currentUser: User }> = ({ currentUser }) => {
     };
 
     const handleConfirmDelivery = () => {
-        // FIX: Added a guard to ensure selectedOrder is a full PurchaseOrder before accessing its id.
         if (selectedOrder && 'id' in selectedOrder) {
             markOrderAsDelivered(selectedOrder.id, currentUser.name || '');
         }
@@ -161,7 +161,7 @@ const Dashboard: React.FC<{ currentUser: User }> = ({ currentUser }) => {
             lineItems: [{
                 id: `LI-lowstock-${Date.now()}`,
                 materialId: material.id,
-                quantity: lowStockItem.threshold * 2, // Suggest ordering double the threshold
+                quantity: lowStockItem.threshold * 2,
                 unit: material.unit,
                 specifications: '',
                 rate: 0,
@@ -170,49 +170,33 @@ const Dashboard: React.FC<{ currentUser: User }> = ({ currentUser }) => {
         };
         setSelectedOrder(newPartialOrder);
         setIsNewOrderModalOpen(true);
+        addNotification('info', `New order form pre-filled for ${material.name}.`);
     };
 
-
-    const activeOrders = useMemo(() => orders.filter(o => o.status !== OrderStatus.Delivered && o.status !== OrderStatus.Cancelled), [orders]);
-    const lowStockItems = useMemo(() => inventory.filter(i => i.quantity <= i.threshold), [inventory]);
-    const intentsAwaitingReview = useMemo(() => purchaseIntents.filter(i => i.status === PurchaseIntentStatus.Pending), [purchaseIntents]);
-
     const SideNavItem = ({ icon, label, active, onClick }: { icon: React.ReactNode, label: string, active: boolean, onClick: () => void }) => (
-        <button onClick={() => { onClick(); setIsSidebarOpen(false); }} className={`flex items-center w-full text-left px-4 py-2.5 rounded-lg text-sm font-medium transition-colors ${active ? 'bg-primary-100 text-primary-700' : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'}`}>
-            {icon}
-            {label}
-        </button>
+        <li>
+            <a href="#" onClick={(e) => { e.preventDefault(); onClick(); setIsSidebarOpen(false); }} className={`flex items-center w-full text-left p-2.5 rounded-lg text-sm font-medium transition-colors ${active ? 'bg-primary-100 text-primary-700' : 'text-gray-600 hover:bg-gray-100/80 hover:text-gray-900'}`}>
+                {icon}
+                <span className="flex-1 ms-3 whitespace-nowrap">{label}</span>
+            </a>
+        </li>
     );
 
     const renderView = () => {
         switch(view) {
             case 'dashboard': return (
-                <div className="space-y-6">
-                    {currentUser.role !== 'purchaser' && <LowStockAlerts lowStockItems={lowStockItems} onCreateOrder={handleCreateOrderForLowStock} />}
-                    {currentUser.role === 'purchaser' && intentsAwaitingReview.length > 0 && 
-                        <PurchaseIntentsTable 
-                            title="Intents Awaiting Your Review"
-                            intents={intentsAwaitingReview}
-                            materials={materials}
-                            currentUser={currentUser}
-                            onApprove={approvePurchaseIntent}
-                            onReject={handleRejectIntentClick}
-                            onCreateOrder={handleCreateOrderFromIntent}
-                        />
-                    }
-                    <OrderTable 
-                        orders={activeOrders} 
-                        vendors={vendors} 
-                        materials={materials} 
-                        onUpdateOrderStatus={(orderId, status) => updateOrder({ ...orders.find(o => o.id === orderId)!, status })} 
-                        onEditOrder={handleEditOrder} 
-                        onViewOrder={handleViewOrder}
-                        onApproveOrder={approveOrder}
-                        onRejectOrder={handleRejectOrderClick}
-                        currentUser={currentUser}
-                        onConfirmDelivery={handleConfirmDeliveryClick}
-                    />
-                </div>
+                <DashboardHome
+                    currentUser={currentUser}
+                    onEditOrder={handleEditOrder}
+                    onViewOrder={handleViewOrder}
+                    onApproveOrder={approveOrder}
+                    onRejectOrder={handleRejectOrderClick}
+                    onConfirmDelivery={handleConfirmDeliveryClick}
+                    onApproveIntent={approvePurchaseIntent}
+                    onRejectIntent={handleRejectIntentClick}
+                    onCreateOrderFromIntent={handleCreateOrderFromIntent}
+                    onCreateOrderForLowStock={handleCreateOrderForLowStock}
+                />
             );
             case 'inventory': return <InventoryTable inventory={inventory} onUpdateItem={updateInventoryItem} />;
             case 'order_history': return <OrderHistory orders={orders} vendors={vendors} materials={materials} onBack={() => setView('dashboard')} />;
@@ -225,69 +209,54 @@ const Dashboard: React.FC<{ currentUser: User }> = ({ currentUser }) => {
 
     return (
         <div className="flex">
-            {/* Overlay for mobile */}
             {isSidebarOpen && (
                 <div
-                    className="fixed inset-0 bg-black/30 z-40 lg:hidden"
+                    className="fixed inset-0 bg-black/30 z-30 lg:hidden"
                     onClick={() => setIsSidebarOpen(false)}
                     aria-hidden="true"
                 ></div>
             )}
             
-            <aside className={`fixed inset-y-0 left-0 z-50 w-64 bg-white p-4 border-r border-gray-200 transform transition-transform duration-300 ease-in-out lg:sticky lg:top-[65px] lg:h-[calc(100vh-65px)] lg:translate-x-0 ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-                <div className="flex justify-between items-center mb-4 lg:hidden">
-                    <h2 className="font-semibold text-lg text-gray-800">Menu</h2>
-                     <button onClick={() => setIsSidebarOpen(false)} className="p-1 text-gray-500 hover:text-gray-800" aria-label="Close menu">
-                        <XMarkIcon className="w-6 h-6" />
-                    </button>
-                </div>
-                <nav className="space-y-2">
-                    <SideNavItem icon={<Squares2X2Icon className="w-5 h-5 mr-3"/>} label="Dashboard" active={view === 'dashboard'} onClick={() => setView('dashboard')} />
-                    
-                    {(currentUser.role === 'manager' || currentUser.role === 'inventory_manager') &&
-                        <SideNavItem icon={<ClipboardDocumentListIcon className="w-5 h-5 mr-3" />} label="Inventory Status" active={view === 'inventory'} onClick={() => setView('inventory')} />
-                    }
-
-                    <SideNavItem icon={<ArchiveBoxIcon className="w-5 h-5 mr-3"/>} label="Order History" active={view === 'order_history'} onClick={() => setView('order_history')} />
-                    
-                    {currentUser.role !== 'purchaser' &&
-                        <SideNavItem icon={<ReceiptRefundIcon className="w-5 h-5 mr-3"/>} label="Issuance History" active={view === 'issuance_history'} onClick={() => setView('issuance_history')} />
-                    }
-                     {(currentUser.role === 'manager' || currentUser.role === 'purchaser') &&
-                        <SideNavItem icon={<ClipboardDocumentCheckIcon className="w-5 h-5 mr-3"/>} label="Purchase Intents" active={view === 'intents_all'} onClick={() => setView('intents_all')} />
-                    }
-                    <SideNavItem icon={<ChartBarIcon className="w-5 h-5 mr-3"/>} label="Reports" active={view === 'reports'} onClick={() => setView('reports')} />
-
-                    <div className="pt-4 mt-4 border-t">
-                        <h3 className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Actions</h3>
-                         {(currentUser.role === 'manager' || currentUser.role === 'purchaser') &&
-                            <button onClick={() => { setSelectedOrder(null); setIsNewOrderModalOpen(true); setIsSidebarOpen(false); }} className="w-full text-left flex items-center px-4 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100">
-                                <PlusIcon className="w-5 h-5 mr-3" /> New Purchase Order
+            <aside id="sidebar" className={`fixed top-0 left-0 z-40 w-64 h-screen pt-20 transition-transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} bg-white border-r border-gray-200 lg:translate-x-0`}>
+                <div className="h-full px-3 pb-4 overflow-y-auto bg-white">
+                    <ul className="space-y-2 font-medium">
+                        <SideNavItem icon={<Squares2X2Icon className="w-5 h-5 text-gray-500"/>} label="Dashboard" active={view === 'dashboard'} onClick={() => setView('dashboard')} />
+                        <SideNavItem icon={<ClipboardDocumentListIcon className="w-5 h-5 text-gray-500" />} label="Inventory Status" active={view === 'inventory'} onClick={() => setView('inventory')} />
+                        <SideNavItem icon={<ArchiveBoxIcon className="w-5 h-5 text-gray-500"/>} label="Order History" active={view === 'order_history'} onClick={() => setView('order_history')} />
+                        <SideNavItem icon={<ReceiptRefundIcon className="w-5 h-5 text-gray-500"/>} label="Issuance History" active={view === 'issuance_history'} onClick={() => setView('issuance_history')} />
+                        <SideNavItem icon={<ClipboardDocumentCheckIcon className="w-5 h-5 text-gray-500"/>} label="Purchase Intents" active={view === 'intents_all'} onClick={() => setView('intents_all')} />
+                        <SideNavItem icon={<ChartBarIcon className="w-5 h-5 text-gray-500"/>} label="Reports" active={view === 'reports'} onClick={() => setView('reports')} />
+                    </ul>
+                    <div className="pt-4 mt-4 space-y-2 font-medium border-t border-gray-200">
+                        <h3 className="px-2.5 py-1 text-xs font-semibold text-gray-400 uppercase">Actions</h3>
+                        {(currentUser.role === 'manager' || currentUser.role === 'purchaser') &&
+                            <button onClick={() => { setSelectedOrder(null); setIsNewOrderModalOpen(true); setIsSidebarOpen(false); }} className="w-full text-left flex items-center p-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100">
+                                <PlusIcon className="w-5 h-5 text-gray-500 mr-3" /> New Purchase Order
                             </button>
                         }
                         {currentUser.role !== 'purchaser' &&
-                            <button onClick={() => { setIsIssueModalOpen(true); setIsSidebarOpen(false); }} className="w-full text-left flex items-center px-4 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100">
-                                <ReceiptRefundIcon className="w-5 h-5 mr-3" /> Issue Material
+                            <button onClick={() => { setIsIssueModalOpen(true); setIsSidebarOpen(false); }} className="w-full text-left flex items-center p-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100">
+                                <TruckIcon className="w-5 h-5 text-gray-500 mr-3" /> Issue Material
                             </button>
                         }
                          {currentUser.role !== 'manager' &&
-                             <button onClick={() => { setIsIntentModalOpen(true); setIsSidebarOpen(false); }} className="w-full text-left flex items-center px-4 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100">
-                                <DocumentPlusIcon className="w-5 h-5 mr-3" /> Raise Purchase Intent
+                             <button onClick={() => { setIsIntentModalOpen(true); setIsSidebarOpen(false); }} className="w-full text-left flex items-center p-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100">
+                                <DocumentPlusIcon className="w-5 h-5 text-gray-500 mr-3" /> Raise Purchase Intent
                             </button>
                         }
                     </div>
 
-                    <div className="pt-4 mt-4 border-t">
-                         <h3 className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Management</h3>
-                         <button onClick={() => { setIsVendorModalOpen(true); setIsSidebarOpen(false); }} className="w-full text-left flex items-center px-4 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100">Manage Vendors</button>
-                         <button onClick={() => { setIsMaterialModalOpen(true); setIsSidebarOpen(false); }} className="w-full text-left flex items-center px-4 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100">Manage Materials</button>
-                         <button onClick={() => { setIsSiteModalOpen(true); setIsSidebarOpen(false); }} className="w-full text-left flex items-center px-4 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100">Manage Sites/Clients</button>
-                         <button onClick={() => { setIsStockModalOpen(true); setIsSidebarOpen(false); }} className="w-full text-left flex items-center px-4 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100">Update Stock Levels</button>
+                    <div className="pt-4 mt-4 space-y-2 font-medium border-t border-gray-200">
+                         <h3 className="px-2.5 py-1 text-xs font-semibold text-gray-400 uppercase">Management</h3>
+                         <SideNavItem icon={<UsersIcon className="w-5 h-5 text-gray-500" />} label="Manage Vendors" active={false} onClick={() => { setIsVendorModalOpen(true); }} />
+                         <SideNavItem icon={<CubeIcon className="w-5 h-5 text-gray-500" />} label="Manage Materials" active={false} onClick={() => { setIsMaterialModalOpen(true); }} />
+                         <SideNavItem icon={<BuildingOfficeIcon className="w-5 h-5 text-gray-500" />} label="Manage Sites/Clients" active={false} onClick={() => { setIsSiteModalOpen(true); }} />
+                         <SideNavItem icon={<ArrowUpTrayIcon className="w-5 h-5 text-gray-500" />} label="Update Stock Levels" active={false} onClick={() => { setIsStockModalOpen(true); }} />
                     </div>
-                </nav>
+                </div>
             </aside>
 
-            <main className="flex-1 p-4 sm:p-6 bg-gray-50 min-w-0">
+            <main className="lg:ml-64 flex-1 p-4 sm:p-6 bg-gray-100 min-w-0 min-h-screen">
                  <button
                     onClick={() => setIsSidebarOpen(true)}
                     className="lg:hidden p-1 mb-4 text-gray-600 hover:text-gray-900"
@@ -308,7 +277,7 @@ const Dashboard: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                         vendors={vendors}
                         materials={materials}
                         sites={sites}
-                        initialData={selectedOrder || undefined} // Can be partial from an intent
+                        initialData={selectedOrder || undefined}
                     />
                 </Modal>
             )}

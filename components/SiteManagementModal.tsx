@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Site, PurchaseOrder } from '../types';
-// FIX: To resolve a filename casing conflict, all icon imports are standardized to use './icons'.
-import { PencilIcon, TrashIcon } from './icons';
+import { PencilIcon, TrashIcon } from './Icons';
 import Modal from './Modal';
 import ExcelUpload from './ExcelUpload';
+import { useAppContext } from '../context/AppContext';
 
 interface SiteManagementModalProps {
   isOpen: boolean;
@@ -28,6 +28,7 @@ const SiteManagementModal: React.FC<SiteManagementModalProps> = ({
 }) => {
   const [isEditing, setIsEditing] = useState<Site | null>(null);
   const [siteName, setSiteName] = useState('');
+  const { addNotification } = useAppContext();
   
   useEffect(() => {
     if (!isOpen) {
@@ -64,7 +65,7 @@ const SiteManagementModal: React.FC<SiteManagementModalProps> = ({
         order.lineItems.some(li => li.site === siteToDelete.name)
     );
     if (isSiteInUse) {
-      alert('This site/client is used in existing orders and cannot be deleted.');
+      addNotification('warning', 'This site/client is used in existing orders and cannot be deleted.');
       return;
     }
 
@@ -73,7 +74,7 @@ const SiteManagementModal: React.FC<SiteManagementModalProps> = ({
     }
   };
 
-  const inputClasses = "w-full bg-gray-100 border-gray-300 rounded-md p-2 text-gray-800 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition shadow-sm";
+  const inputClasses = "w-full bg-gray-50 border-gray-300 rounded-md p-2 text-gray-800 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition shadow-sm";
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Manage Sites/Clients">
@@ -83,7 +84,6 @@ const SiteManagementModal: React.FC<SiteManagementModalProps> = ({
                 title="Bulk Upload Sites/Clients"
                 instructions="Upload an Excel file with a single column header: <b>name</b>."
             />
-            {/* Add/Edit Form */}
             <form onSubmit={handleSubmit} className="pt-6 border-t border-gray-200 space-y-3">
                 <h3 className="text-base font-semibold text-gray-800">{isEditing ? 'Edit Site/Client' : 'Add a New Site/Client'}</h3>
                 <div>
@@ -110,7 +110,6 @@ const SiteManagementModal: React.FC<SiteManagementModalProps> = ({
                 </div>
             </form>
 
-            {/* Site List */}
             <div className="space-y-2 max-h-60 overflow-y-auto pr-2 -mr-2">
                 {sites.map(site => (
                 <div key={site.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-200">

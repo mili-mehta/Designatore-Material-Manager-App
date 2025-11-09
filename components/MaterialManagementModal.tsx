@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Material, PurchaseOrder } from '../types';
-// FIX: To resolve a filename casing conflict, all icon imports are standardized to use './icons'.
-import { PencilIcon, TrashIcon } from './icons';
+import { PencilIcon, TrashIcon } from './Icons';
 import Modal from './Modal';
 import { UNITS } from '../constants';
 import ExcelUpload from './ExcelUpload';
+import { useAppContext } from '../context/AppContext';
 
 interface MaterialManagementModalProps {
   isOpen: boolean;
@@ -30,6 +30,7 @@ const MaterialManagementModal: React.FC<MaterialManagementModalProps> = ({
   const [isEditing, setIsEditing] = useState<Material | null>(null);
   const [materialName, setMaterialName] = useState('');
   const [materialUnit, setMaterialUnit] = useState(UNITS[0]);
+  const { addNotification } = useAppContext();
   
   useEffect(() => {
     if (!isOpen) {
@@ -68,7 +69,7 @@ const MaterialManagementModal: React.FC<MaterialManagementModalProps> = ({
   const handleDelete = (materialId: string) => {
     const isMaterialInUse = orders.some(order => order.lineItems.some(li => li.materialId === materialId));
     if (isMaterialInUse) {
-      alert('This material is used in existing orders and cannot be deleted.');
+      addNotification('warning', 'This material is used in existing orders and cannot be deleted.');
       return;
     }
 
@@ -77,7 +78,7 @@ const MaterialManagementModal: React.FC<MaterialManagementModalProps> = ({
     }
   };
 
-  const inputClasses = "w-full bg-gray-100 border-gray-300 rounded-md p-2 text-gray-800 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition shadow-sm text-sm";
+  const inputClasses = "w-full bg-gray-50 border-gray-300 rounded-md p-2 text-gray-800 focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition shadow-sm text-sm";
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Manage Materials">
@@ -88,7 +89,6 @@ const MaterialManagementModal: React.FC<MaterialManagementModalProps> = ({
                 instructions="Upload an Excel file with a header for <b>name</b>. A column for <b>unit</b> is optional (defaults to 'Nos.')."
             />
 
-            {/* Add/Edit Form */}
             <form onSubmit={handleSubmit} className="pt-6 border-t border-gray-200 space-y-3">
                 <h3 className="text-base font-semibold text-gray-800">{isEditing ? 'Edit Material' : 'Add a New Material'}</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -123,7 +123,6 @@ const MaterialManagementModal: React.FC<MaterialManagementModalProps> = ({
                 </div>
             </form>
 
-            {/* Material List */}
             <div className="space-y-2 max-h-60 overflow-y-auto pr-2 -mr-2">
                 {materials.map(material => (
                 <div key={material.id} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg border border-gray-200">
