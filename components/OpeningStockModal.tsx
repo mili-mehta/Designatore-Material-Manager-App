@@ -3,8 +3,8 @@ import { Material, InventoryItem } from '../types';
 import Modal from './Modal';
 import { translations } from '../translations';
 import { UNITS } from '../constants';
-// FIX: Changed icon import path from './Icons' to './icons' to resolve filename casing conflict.
-import { PlusIcon, TrashIcon } from './icons';
+// FIX: Updated icon import path to './Icons' to resolve a filename casing conflict.
+import { PlusIcon, TrashIcon } from './Icons';
 import ExcelUpload from './ExcelUpload';
 
 // A simple i18n helper
@@ -164,8 +164,8 @@ const OpeningStockModal: React.FC<OpeningStockModalProps> = ({
         <div className="pt-4 mt-4 border-t border-gray-200">
             <h4 className="text-base font-semibold text-gray-800 mb-3">{t('addNewMaterialInStock')}</h4>
             <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                <div className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end">
-                    <div className="md:col-span-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 items-end">
+                    <div className="lg:col-span-2">
                         <label className="block mb-1.5 text-xs font-medium text-gray-600">{t('materialName')}</label>
                         <input type="text" value={newMaterialName} onChange={e => setNewMaterialName(e.target.value)} placeholder={t('materialNamePlaceholder')} className={smallInputClasses}/>
                     </div>

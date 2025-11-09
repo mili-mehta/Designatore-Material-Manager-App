@@ -269,7 +269,7 @@ const Reports: React.FC<ReportsProps> = ({ orders, vendors, materials, currentUs
         <div className="space-y-6">
             <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
                 <h3 className="text-lg font-semibold text-gray-800 mb-4">Report Filters</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
                      <div>
                         <label className={labelClasses}>Report Type</label>
                         <select value={reportType} onChange={(e) => setReportType(e.target.value as ReportType)} className={inputClasses}>
@@ -302,7 +302,7 @@ const Reports: React.FC<ReportsProps> = ({ orders, vendors, materials, currentUs
                      
                     {reportType !== 'inventory' && (
                         <div className="lg:col-span-2">
-                            <div className="grid grid-cols-2 gap-2">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {isOrderReport ? (
                                 <div>
                                     <label className={labelClasses}>{t('dateFilterOn')}</label>
@@ -315,7 +315,7 @@ const Reports: React.FC<ReportsProps> = ({ orders, vendors, materials, currentUs
                                 
                                 <div className={isOrderReport ? "" : "col-span-2"}>
                                     <label className={labelClasses}>{t('filterByDateRange')}</label>
-                                    <div className="flex gap-2">
+                                    <div className="flex flex-col sm:flex-row gap-2">
                                         <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className={inputClasses} />
                                         <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className={inputClasses} min={startDate} />
                                     </div>

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { PurchaseOrder, Vendor, Priority, OrderLineItem, Material, Site } from '../types';
 import { UNITS } from '../constants';
-// FIX: Changed icon import path from './Icons' to './icons' to resolve filename casing conflict.
-import { PlusIcon, TrashIcon } from './icons';
+// FIX: Updated icon import path to './Icons' to resolve a filename casing conflict.
+import { PlusIcon, TrashIcon } from './Icons';
 
 interface EditOrderFormProps {
   order: PurchaseOrder;
@@ -216,7 +216,7 @@ const EditOrderForm: React.FC<EditOrderFormProps> = ({ order, onUpdateOrder, onC
                 <textarea value={item.specifications || ''} onChange={e => handleLineItemChange(index, 'specifications', e.target.value)} className={`${smallInputClasses} min-h-[60px]`} placeholder="e.g., Grade A, termite resistant..."></textarea>
             </div>
             
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                  <div>
                     <label className={smallLabelClasses}>Quantity</label>
                     <input type="number" value={item.quantity || ''} onChange={e => handleLineItemChange(index, 'quantity', e.target.value)} placeholder="0" min="1" className={smallInputClasses} required/>
@@ -237,7 +237,7 @@ const EditOrderForm: React.FC<EditOrderFormProps> = ({ order, onUpdateOrder, onC
                 </div>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 items-end pt-4 border-t border-gray-200">
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 items-end pt-4 border-t border-gray-200">
                 <div>
                     <label className={smallLabelClasses}>Discount %</label>
                     <input type="number" value={item.discount || ''} onChange={e => handleLineItemChange(index, 'discount', e.target.value)} placeholder="0" min="0" max="100" className={smallInputClasses} />

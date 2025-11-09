@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Material, PurchaseIntent, User, Site, PurchaseIntentLineItem } from '../types';
 import { UNITS } from '../constants';
-// FIX: Changed icon import path from './Icons' to './icons' to resolve filename casing conflict.
-import { PlusIcon, TrashIcon } from './icons';
+// FIX: Updated icon import path to './Icons' to resolve a filename casing conflict.
+import { PlusIcon, TrashIcon } from './Icons';
 
 interface NewPurchaseIntentFormProps {
   onAddIntent: (intent: Omit<PurchaseIntent, 'id' | 'requestedOn' | 'status'>) => void;
@@ -116,7 +116,7 @@ const NewPurchaseIntentForm: React.FC<NewPurchaseIntentFormProps> = ({ onAddInte
                 </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                  <div>
                     <label className={smallLabelClasses}>Quantity</label>
                     <input type="number" value={item.quantity || ''} onChange={e => handleLineItemChange(index, 'quantity', e.target.value)} placeholder="0" min="1" className={smallInputClasses} required/>
