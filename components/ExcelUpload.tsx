@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { read, utils, WorkBook } from 'xlsx';
-// FIX: Updated icon import path to './Icons' to resolve a filename casing conflict.
-import { ArrowUpTrayIcon, CheckCircleIcon, XMarkIcon } from './Icons';
+// FIX: Updated icon import path to './icons' to resolve a filename casing conflict.
+import { ArrowUpTrayIcon, CheckCircleIcon, XMarkIcon } from './icons';
 
 interface ExcelUploadProps<T> {
   onDataParsed: (data: T[]) => void;

@@ -9,14 +9,15 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-// Serve the built files from the 'dist' directory
+// Serve static files from the 'dist' directory, which is the output of 'vite build'
 app.use(express.static(path.join(__dirname, "dist")));
 
-// For single-page applications, fall back to index.html for any unknown routes
+// For any other request that doesn't match a static file, serve the index.html file
+// This is the standard pattern for single-page applications (SPAs)
 app.get("*", (_req, res) => {
   res.sendFile(path.join(__dirname, "dist", "index.html"));
 });
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`✅ Server listening on port ${PORT}`);
+  console.log(`✅ Server listening on ${PORT}`);
 });
