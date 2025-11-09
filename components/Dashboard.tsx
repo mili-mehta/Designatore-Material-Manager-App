@@ -277,15 +277,13 @@ const Dashboard: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                         }
                     </div>
 
-                    {currentUser.role === 'manager' && (
-                        <div className="pt-4 mt-4 border-t">
-                             <h3 className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Management</h3>
-                             <button onClick={() => { setIsVendorModalOpen(true); setIsSidebarOpen(false); }} className="w-full text-left flex items-center px-4 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100">Manage Vendors</button>
-                             <button onClick={() => { setIsMaterialModalOpen(true); setIsSidebarOpen(false); }} className="w-full text-left flex items-center px-4 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100">Manage Materials</button>
-                             <button onClick={() => { setIsSiteModalOpen(true); setIsSidebarOpen(false); }} className="w-full text-left flex items-center px-4 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100">Manage Sites/Clients</button>
-                             <button onClick={() => { setIsStockModalOpen(true); setIsSidebarOpen(false); }} className="w-full text-left flex items-center px-4 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100">Update Stock Levels</button>
-                        </div>
-                    )}
+                    <div className="pt-4 mt-4 border-t">
+                         <h3 className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase">Management</h3>
+                         <button onClick={() => { setIsVendorModalOpen(true); setIsSidebarOpen(false); }} className="w-full text-left flex items-center px-4 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100">Manage Vendors</button>
+                         <button onClick={() => { setIsMaterialModalOpen(true); setIsSidebarOpen(false); }} className="w-full text-left flex items-center px-4 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100">Manage Materials</button>
+                         <button onClick={() => { setIsSiteModalOpen(true); setIsSidebarOpen(false); }} className="w-full text-left flex items-center px-4 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100">Manage Sites/Clients</button>
+                         <button onClick={() => { setIsStockModalOpen(true); setIsSidebarOpen(false); }} className="w-full text-left flex items-center px-4 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-100">Update Stock Levels</button>
+                    </div>
                 </nav>
             </aside>
 
