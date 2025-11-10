@@ -8,14 +8,10 @@ interface PurchaseIntentsTableProps {
   intents: PurchaseIntent[];
   materials: Material[];
   currentUser: User;
-  onApprove?: (intentId: string) => void;
-  onReject?: (intent: PurchaseIntent) => void;
-  onCreateOrder?: (intent: PurchaseIntent) => void;
+  onViewIntent: (intent: PurchaseIntent) => void;
 }
 
-const PurchaseIntentsTable: React.FC<PurchaseIntentsTableProps> = ({ title, intents, materials, currentUser, onApprove, onReject, onCreateOrder }) => {
-  const { role: currentUserRole } = currentUser;
-
+const PurchaseIntentsTable: React.FC<PurchaseIntentsTableProps> = ({ title, intents, materials, currentUser, onViewIntent }) => {
   const getStatusClass = (status: PurchaseIntentStatus) => {
     switch (status) {
       case PurchaseIntentStatus.Approved: return 'bg-green-100 text-green-700';
@@ -36,7 +32,7 @@ const PurchaseIntentsTable: React.FC<PurchaseIntentsTableProps> = ({ title, inte
           <thead className="border-b border-gray-200 bg-gray-50">
             <tr>
               <th className="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Intent Details</th>
-              {currentUserRole === 'purchaser' && <th className="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Requested By</th>}
+              <th className="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Requested By</th>
               <th className="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Requested On</th>
               <th className="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Status</th>
               <th className="p-4 text-xs font-semibold text-gray-500 uppercase tracking-wider text-center">Actions</th>
@@ -46,7 +42,7 @@ const PurchaseIntentsTable: React.FC<PurchaseIntentsTableProps> = ({ title, inte
             {intents.map((intent) => {
               const firstMaterial = materials.find(m => m.id === intent.lineItems[0]?.materialId);
               return (
-                <tr key={intent.id} className="border-b border-gray-200 last:border-b-0 hover:bg-gray-50/50">
+                <tr key={intent.id} className="border-b border-gray-200 last:border-b-0 hover:bg-gray-50/50 cursor-pointer" onClick={() => onViewIntent(intent)}>
                   <td className="p-4">
                     <div className="font-medium text-gray-800">{firstMaterial?.name}</div>
                     {intent.lineItems.length > 1 && <div className="text-sm text-gray-500">+ {intent.lineItems.length - 1} more items</div>}
@@ -54,34 +50,13 @@ const PurchaseIntentsTable: React.FC<PurchaseIntentsTableProps> = ({ title, inte
                     {intent.notes && <div className="text-xs text-gray-500 mt-1 max-w-xs truncate" title={intent.notes}>Reason: {intent.notes}</div>}
                     {intent.status === PurchaseIntentStatus.Rejected && intent.rejectionReason && <div className="text-xs text-red-500 mt-1 max-w-xs truncate" title={intent.rejectionReason}>Rejection: {intent.rejectionReason}</div>}
                   </td>
-                  {currentUserRole === 'purchaser' && <td className="p-4 text-sm text-gray-600">{intent.requestedBy}</td>}
+                  <td className="p-4 text-sm text-gray-600">{intent.requestedBy}</td>
                   <td className="p-4 text-sm font-mono text-gray-600">{intent.requestedOn}</td>
                   <td className="p-4 text-center">
                     <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${getStatusClass(intent.status)}`}>{intent.status}</span>
                   </td>
                   <td className="p-4 text-center">
-                    <div className="flex items-center justify-center gap-2">
-                      {currentUserRole === 'purchaser' && (
-                        <>
-                          {intent.status === PurchaseIntentStatus.Pending && onApprove && onReject && (
-                            <>
-                              <button onClick={() => onApprove(intent.id)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 rounded-md transition shadow-sm">
-                                <HandThumbUpIcon className="w-4 h-4" /> Approve
-                              </button>
-                              <button onClick={() => onReject(intent)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-md transition shadow-sm">
-                                <HandThumbDownIcon className="w-4 h-4" /> Reject
-                              </button>
-                            </>
-                          )}
-                          {intent.status === PurchaseIntentStatus.Approved && onCreateOrder && (
-                            <button onClick={() => onCreateOrder(intent)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-md transition shadow-sm">
-                              <ArrowRightCircleIcon className="w-4 h-4" /> Create PO
-                            </button>
-                          )}
-                        </>
-                      )}
-                      {(!onApprove && !onCreateOrder) && <span className="text-xs text-gray-400">-</span>}
-                    </div>
+                    <button onClick={(e) => { e.stopPropagation(); onViewIntent(intent); }} className="px-3 py-1.5 bg-white hover:bg-gray-100 border border-gray-300 rounded-md text-gray-700 text-xs font-semibold transition">View</button>
                   </td>
                 </tr>
               );

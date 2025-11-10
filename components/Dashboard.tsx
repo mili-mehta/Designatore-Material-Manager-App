@@ -20,6 +20,7 @@ import RejectionModal from './RejectionModal';
 import OpeningStockModal from './OpeningStockModal';
 import DeliveryConfirmationModal from './DeliveryConfirmationModal';
 import DashboardHome from './DashboardHome';
+import PurchaseIntentDetailsModal from './PurchaseIntentDetailsModal';
 
 import { 
     Squares2X2Icon, 
@@ -93,6 +94,7 @@ const Dashboard: React.FC<{ currentUser: User }> = ({ currentUser }) => {
     const [isIntentRejectModalOpen, setIsIntentRejectModalOpen] = useState(false);
     const [isStockModalOpen, setIsStockModalOpen] = useState(false);
     const [isDeliveryConfirmModalOpen, setIsDeliveryConfirmModalOpen] = useState(false);
+    const [isIntentDetailsModalOpen, setIsIntentDetailsModalOpen] = useState(false);
 
     const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | Partial<PurchaseOrder> | null>(null);
     const [selectedIntent, setSelectedIntent] = useState<PurchaseIntent | null>(null);
@@ -105,6 +107,11 @@ const Dashboard: React.FC<{ currentUser: User }> = ({ currentUser }) => {
     const handleViewOrder = (order: PurchaseOrder) => {
         setSelectedOrder(order);
         setIsDetailsModalOpen(true);
+    };
+    
+    const handleViewIntent = (intent: PurchaseIntent) => {
+        setSelectedIntent(intent);
+        setIsIntentDetailsModalOpen(true);
     };
 
     const handleRejectOrderClick = (order: PurchaseOrder) => {
@@ -192,17 +199,15 @@ const Dashboard: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                     onApproveOrder={approveOrder}
                     onRejectOrder={handleRejectOrderClick}
                     onConfirmDelivery={handleConfirmDeliveryClick}
-                    onApproveIntent={approvePurchaseIntent}
-                    onRejectIntent={handleRejectIntentClick}
-                    onCreateOrderFromIntent={handleCreateOrderFromIntent}
                     onCreateOrderForLowStock={handleCreateOrderForLowStock}
+                    onViewIntent={handleViewIntent}
                 />
             );
             case 'inventory': return <InventoryTable inventory={inventory} onUpdateItem={updateInventoryItem} />;
             case 'order_history': return <OrderHistory orders={orders} vendors={vendors} materials={materials} onBack={() => setView('dashboard')} />;
             case 'issuance_history': return <IssuanceHistory issuances={issuances} materials={materials} sites={sites} onBack={() => setView('dashboard')} />;
             case 'reports': return <Reports orders={orders} vendors={vendors} materials={materials} currentUser={currentUser} inventory={inventory} issuances={issuances} purchaseIntents={purchaseIntents} sites={sites} />;
-            case 'intents_all': return <PurchaseIntentsTable title="All Purchase Intents" intents={purchaseIntents} materials={materials} currentUser={currentUser} onCreateOrder={handleCreateOrderFromIntent} />;
+            case 'intents_all': return <PurchaseIntentsTable title="All Purchase Intents" intents={purchaseIntents} materials={materials} currentUser={currentUser} onViewIntent={handleViewIntent} />;
             default: return null;
         }
     }
@@ -411,6 +416,29 @@ const Dashboard: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                     vendors={vendors}
                 />
             )}
+
+            {isIntentDetailsModalOpen && selectedIntent && (
+                <PurchaseIntentDetailsModal
+                    isOpen={isIntentDetailsModalOpen}
+                    onClose={() => setIsIntentDetailsModalOpen(false)}
+                    intent={selectedIntent}
+                    materials={materials}
+                    currentUser={currentUser}
+                    onApprove={(intentId) => {
+                        approvePurchaseIntent(intentId);
+                        setIsIntentDetailsModalOpen(false);
+                    }}
+                    onReject={(intent) => {
+                        handleRejectIntentClick(intent);
+                        setIsIntentDetailsModalOpen(false);
+                    }}
+                    onCreateOrder={(intent) => {
+                        handleCreateOrderFromIntent(intent);
+                        setIsIntentDetailsModalOpen(false);
+                    }}
+                />
+            )}
+
 
         </div>
     );

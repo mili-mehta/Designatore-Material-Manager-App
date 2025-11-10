@@ -15,9 +15,7 @@ interface DashboardHomeProps {
     onApproveOrder?: (orderId: string) => void;
     onRejectOrder?: (order: PurchaseOrder) => void;
     onCreateOrderForLowStock: (materialId: string) => void;
-    onApproveIntent: (intentId: string) => void;
-    onRejectIntent: (intent: PurchaseIntent) => void;
-    onCreateOrderFromIntent: (intent: PurchaseIntent) => void;
+    onViewIntent: (intent: PurchaseIntent) => void;
 }
 
 const DashboardHome: React.FC<DashboardHomeProps> = ({ 
@@ -28,9 +26,7 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({
     onApproveOrder, 
     onRejectOrder,
     onCreateOrderForLowStock,
-    onApproveIntent,
-    onRejectIntent,
-    onCreateOrderFromIntent
+    onViewIntent,
  }) => {
     const { inventory, orders, purchaseIntents, vendors, materials } = useAppContext();
 
@@ -67,9 +63,7 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({
                     intents={intentsAwaitingReview}
                     materials={materials}
                     currentUser={currentUser}
-                    onApprove={onApproveIntent}
-                    onReject={onRejectIntent}
-                    onCreateOrder={onCreateOrderFromIntent}
+                    onViewIntent={onViewIntent}
                 />
             }
             <OrderTable 
