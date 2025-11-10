@@ -87,11 +87,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         supabase.from('vendors').select('*').order('name'),
         supabase.from('sites').select('*').order('name'),
         supabase.from('inventory').select('*'),
-        supabase.from('purchase_orders').select('*').order('created_at', { ascending: false }),
+        supabase.from('purchase_orders').select('*').order('ordered_on', { ascending: false }),
         supabase.from('order_line_items').select('*'),
-        supabase.from('purchase_intents').select('*').order('created_at', { ascending: false }),
+        supabase.from('purchase_intents').select('*').order('requested_on', { ascending: false }),
         supabase.from('purchase_intent_line_items').select('*'),
-        supabase.from('material_issuances').select('*').order('created_at', { ascending: false }),
+        supabase.from('material_issuances').select('*').order('issued_on', { ascending: false }),
       ]);
 
       const results = [materialsRes, vendorsRes, sitesRes, inventoryRes, ordersBaseRes, lineItemsRes, intentsBaseRes, intentLineItemsRes, issuancesRes];
@@ -141,7 +141,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         rejectionReason: order.rejection_reason,
         receivedBy: order.received_by,
         intentId: order.intent_id,
-        created_at: order.created_at,
         lineItems: orderLineItems.filter(li => li.order_id === order.id).map(li => ({
           id: li.id,
           orderId: li.order_id,
@@ -171,7 +170,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         reviewedBy: intent.reviewed_by,
         reviewedOn: intent.reviewed_on,
         rejectionReason: intent.rejection_reason,
-        created_at: intent.created_at,
         lineItems: intentLineItems.filter(li => li.intent_id === intent.id).map(li => ({
           id: li.id,
           intentId: li.intent_id,
@@ -194,7 +192,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         issuedBy: issuance.issued_by,
         issuedOn: issuance.issued_on,
         notes: issuance.notes,
-        created_at: issuance.created_at,
       }));
       setIssuances(issuancesData as MaterialIssuance[]);
 
