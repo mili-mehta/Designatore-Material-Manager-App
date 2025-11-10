@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { PurchaseOrder, Vendor, Priority, OrderStatus, OrderLineItem, Material, Site, User } from '../types';
 import { UNITS } from '../constants';
-import { PlusIcon, TrashIcon, ChevronDownIcon } from './Icons';
+// FIX: Standardized icon import to use './icons' to resolve filename casing conflict.
+import { PlusIcon, TrashIcon, ChevronDownIcon } from './icons';
 
 interface NewOrderFormProps {
   onAddOrder: (order: Omit<PurchaseOrder, 'id'>) => void;

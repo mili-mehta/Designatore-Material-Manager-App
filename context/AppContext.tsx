@@ -1,11 +1,10 @@
-import React, { createContext, useContext, useState, ReactNode, useCallback } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useCallback, useEffect } from 'react';
 import {
   Material, Vendor, Site, InventoryItem, PurchaseOrder, MaterialIssuance, PurchaseIntent,
   AppNotification, OrderStatus, Priority, PurchaseIntentStatus, OrderLineItem, PurchaseIntentLineItem,
 } from '../types';
-import {
-  INITIAL_MATERIALS, INITIAL_VENDORS, INITIAL_SITES, INITIAL_INVENTORY, INITIAL_ORDERS,
-} from '../constants';
+import { supabase } from '../services/supabase';
+
 
 interface AppContextType {
   materials: Material[];
@@ -48,58 +47,15 @@ interface AppContextType {
 export const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [materials, setMaterials] = useState<Material[]>(() => 
-    INITIAL_MATERIALS.map((m, i) => ({ ...m, id: `M-${i + 1}` }))
-  );
-  const [vendors, setVendors] = useState<Vendor[]>(() =>
-    INITIAL_VENDORS.map((v, i) => ({ ...v, id: `V-${i + 1}` }))
-  );
-  const [sites, setSites] = useState<Site[]>(() =>
-    INITIAL_SITES.map((s, i) => ({ ...s, id: `S-${i + 1}` }))
-  );
-  const [inventory, setInventory] = useState<InventoryItem[]>(() => {
-    // FIX: Use the fully-formed materials state with IDs for reliable mapping.
-    const allMaterials: Material[] = INITIAL_MATERIALS.map((m, i) => ({ ...m, id: `M-${i + 1}` }));
-    return INITIAL_INVENTORY.map((item, i) => {
-      const material = allMaterials.find(m => m.name === item.name);
-      return { 
-        ...item, 
-        id: material?.id || `I-${i + 1}`,
-        name: material?.name || item.name,
-        unit: material?.unit || item.unit
-      };
-    })
-  });
-  const [orders, setOrders] = useState<PurchaseOrder[]>(() => {
-    // FIX: Use fully-formed materials and vendors state with IDs for reliable mapping.
-    const allMaterials: Material[] = INITIAL_MATERIALS.map((m, i) => ({ ...m, id: `M-${i + 1}` }));
-    const allVendors: Vendor[] = INITIAL_VENDORS.map((v, i) => ({ ...v, id: `V-${i + 1}` }));
-    
-    return INITIAL_ORDERS.map((order, i) => {
-      const vendor = allVendors.find(v => v.name === order.vendorName);
-      const poId = `PO-00${i + 1}`;
-      return {
-        ...order,
-        id: poId,
-        vendorId: vendor?.id || 'V-UNKNOWN',
-        lineItems: order.lineItems.map((li, j) => {
-            const material = allMaterials.find(m => m.name === li.materialName);
-            return {
-                ...li,
-                id: `LI-${poId}-${j}`,
-                orderId: poId,
-                materialId: material?.id || 'M-UNKNOWN',
-                specifications: li.specifications || '',
-                gst: li.gst || 18
-            }
-        })
-      };
-    });
-  });
-
+  const [materials, setMaterials] = useState<Material[]>([]);
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+  const [sites, setSites] = useState<Site[]>([]);
+  const [inventory, setInventory] = useState<InventoryItem[]>([]);
+  const [orders, setOrders] = useState<PurchaseOrder[]>([]);
   const [issuances, setIssuances] = useState<MaterialIssuance[]>([]);
   const [purchaseIntents, setPurchaseIntents] = useState<PurchaseIntent[]>([]);
   const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [loading, setLoading] = useState(true);
 
   const addNotification = useCallback((type: AppNotification['type'], message: string) => {
     setNotifications(prev => [...prev, { id: Date.now(), type, message }]);
@@ -111,289 +67,606 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const dismissNotification = useCallback((id: number) => {
     setNotifications(prev => prev.filter(n => n.id !== id));
   }, []);
+  
+  const fetchData = useCallback(async () => {
+    try {
+      setLoading(true);
 
-  const addOrder = useCallback((order: Omit<PurchaseOrder, 'id'>) => {
-    const newOrder: PurchaseOrder = {
-      ...order,
-      id: `PO-${Date.now()}`
-    };
-    setOrders(prev => [newOrder, ...prev]);
-    addNotification('success', `Order ${newOrder.id} created successfully.`);
-  }, [addNotification]);
+      const [
+        materialsRes,
+        vendorsRes,
+        sitesRes,
+        inventoryRes,
+        ordersBaseRes,
+        lineItemsRes,
+        intentsBaseRes,
+        intentLineItemsRes,
+        issuancesRes,
+      ] = await Promise.all([
+        supabase.from('materials').select('*').order('name'),
+        supabase.from('vendors').select('*').order('name'),
+        supabase.from('sites').select('*').order('name'),
+        supabase.from('inventory').select('*'),
+        supabase.from('purchase_orders').select('*').order('created_at', { ascending: false }),
+        supabase.from('order_line_items').select('*'),
+        supabase.from('purchase_intents').select('*').order('created_at', { ascending: false }),
+        supabase.from('purchase_intent_line_items').select('*'),
+        supabase.from('material_issuances').select('*').order('created_at', { ascending: false }),
+      ]);
 
-  const updateOrder = useCallback((updatedOrder: PurchaseOrder) => {
-    setOrders(prev => prev.map(o => o.id === updatedOrder.id ? updatedOrder : o));
-    addNotification('success', `Order ${updatedOrder.id} updated successfully.`);
+      const results = [materialsRes, vendorsRes, sitesRes, inventoryRes, ordersBaseRes, lineItemsRes, intentsBaseRes, intentLineItemsRes, issuancesRes];
+      for (const res of results) {
+        if (res.error) throw res.error;
+      }
+
+      const materialsData = materialsRes.data || [];
+      setMaterials(materialsData as Material[]);
+
+      const vendorsData = vendorsRes.data || [];
+      setVendors(vendorsData as Vendor[]);
+
+      const sitesData = sitesRes.data || [];
+      setSites(sitesData as Site[]);
+
+      const inventoryItems = inventoryRes.data || [];
+      const inventoryData = materialsData.map(material => {
+        const invItem = inventoryItems.find(i => i.material_id === material.id);
+        return {
+          id: material.id,
+          name: material.name,
+          unit: material.unit,
+          created_at: material.created_at,
+          quantity: invItem?.quantity ?? 0,
+          threshold: invItem?.threshold ?? 10,
+        };
+      });
+      setInventory(inventoryData as InventoryItem[]);
+
+      const orderLineItems = lineItemsRes.data || [];
+      const ordersData = (ordersBaseRes.data || []).map(order => ({
+        id: order.id,
+        vendorId: order.vendor_id,
+        notes: order.notes,
+        priority: order.priority,
+        status: order.status,
+        orderedOn: order.ordered_on,
+        expectedDelivery: order.expected_delivery,
+        deliveredOn: order.delivered_on,
+        raisedBy: order.raised_by,
+        autoGenerated: order.auto_generated,
+        approvedBy: order.approved_by,
+        approvedOn: order.approved_on,
+        rejectedBy: order.rejected_by,
+        rejectedOn: order.rejected_on,
+        rejectionReason: order.rejection_reason,
+        receivedBy: order.received_by,
+        intentId: order.intent_id,
+        created_at: order.created_at,
+        lineItems: orderLineItems.filter(li => li.order_id === order.id).map(li => ({
+          id: li.id,
+          orderId: li.order_id,
+          materialId: li.material_id,
+          quantity: li.quantity,
+          unit: li.unit,
+          specifications: li.specifications,
+          size: li.size,
+          brand: li.brand,
+          site: li.site,
+          rate: li.rate,
+          gst: li.gst,
+          discount: li.discount,
+          freight: li.freight,
+          created_at: li.created_at,
+        })),
+      }));
+      setOrders(ordersData as PurchaseOrder[]);
+
+      const intentLineItems = intentLineItemsRes.data || [];
+      const intentsData = (intentsBaseRes.data || []).map(intent => ({
+        id: intent.id,
+        notes: intent.notes,
+        requestedBy: intent.requested_by,
+        requestedOn: intent.requested_on,
+        status: intent.status,
+        reviewedBy: intent.reviewed_by,
+        reviewedOn: intent.reviewed_on,
+        rejectionReason: intent.rejection_reason,
+        created_at: intent.created_at,
+        lineItems: intentLineItems.filter(li => li.intent_id === intent.id).map(li => ({
+          id: li.id,
+          intentId: li.intent_id,
+          materialId: li.material_id,
+          quantity: li.quantity,
+          unit: li.unit,
+          site: li.site,
+          notes: li.notes,
+          created_at: li.created_at,
+        })),
+      }));
+      setPurchaseIntents(intentsData as PurchaseIntent[]);
+
+      const issuancesData = (issuancesRes.data || []).map(issuance => ({
+        id: issuance.id,
+        materialId: issuance.material_id,
+        quantity: issuance.quantity,
+        unit: issuance.unit,
+        issuedToSite: issuance.issued_to_site,
+        issuedBy: issuance.issued_by,
+        issuedOn: issuance.issued_on,
+        notes: issuance.notes,
+        created_at: issuance.created_at,
+      }));
+      setIssuances(issuancesData as MaterialIssuance[]);
+
+    } catch (error: any) {
+        console.error('Error fetching data:', error);
+        let errorMessage = 'An unknown error occurred.';
+        if (typeof error === 'object' && error !== null) {
+            if ('message' in error && typeof error.message === 'string' && error.message) {
+                errorMessage = error.message;
+            } else {
+                try {
+                    // Attempt to stringify for more complex error objects
+                    errorMessage = JSON.stringify(error);
+                } catch {
+                    // Fallback for unserializable objects (e.g., with circular references)
+                    errorMessage = 'An unserializable error object was thrown. Check the console.';
+                }
+            }
+        } else if (typeof error === 'string') {
+            errorMessage = error;
+        }
+        addNotification('danger', `Failed to load data: ${errorMessage}`);
+    } finally {
+      setLoading(false);
+    }
   }, [addNotification]);
   
-  const markOrderAsDelivered = useCallback((orderId: string, receivedBy: string) => {
-    setOrders(prevOrders => {
-        const orderToDeliver = prevOrders.find(o => o.id === orderId);
-        if (!orderToDeliver) return prevOrders;
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
-        setInventory(prevInventory => {
-            const newInventory = [...prevInventory];
-            orderToDeliver.lineItems.forEach(li => {
-                const itemIndex = newInventory.findIndex(invItem => invItem.id === li.materialId);
-                if (itemIndex > -1) {
-                    newInventory[itemIndex].quantity += li.quantity;
-                } else {
-                    const material = materials.find(m => m.id === li.materialId);
-                    if (material) {
-                         newInventory.push({
-                            ...material,
-                            quantity: li.quantity,
-                            threshold: 10 // default threshold for new items
-                        });
-                    }
-                }
-            });
-            return newInventory;
-        });
-        
-        addNotification('success', `Order ${orderId} marked as delivered. Inventory updated.`);
-        return prevOrders.map(o => 
-            o.id === orderId ? { 
-                ...o, 
-                status: OrderStatus.Delivered, 
-                deliveredOn: new Date().toISOString().split('T')[0],
-                receivedBy 
-            } : o
-        );
+  const addOrder = useCallback(async (order: Omit<PurchaseOrder, 'id'>) => {
+    const { lineItems, ...orderProps } = order;
+    
+    const { data: newOrderData, error } = await supabase.from('purchase_orders').insert({
+      vendor_id: orderProps.vendorId,
+      notes: orderProps.notes,
+      priority: orderProps.priority,
+      status: orderProps.status,
+      ordered_on: orderProps.orderedOn,
+      expected_delivery: orderProps.expectedDelivery,
+      raised_by: orderProps.raisedBy,
+      auto_generated: orderProps.autoGenerated,
+      intent_id: orderProps.intentId
+    }).select().single();
+
+    if (error || !newOrderData) {
+      addNotification('danger', `Failed to create order: ${error?.message}`);
+      return;
+    }
+
+    const lineItemsToInsert = lineItems.map(li => {
+      // remove client-side properties before insert
+      const {id, orderId, ...rest} = li;
+      return {
+        ...rest,
+        order_id: newOrderData.id,
+        material_id: li.materialId,
+      };
     });
-}, [materials, addNotification]);
+
+    const { data: newLineItemsData, error: liError } = await supabase.from('order_line_items').insert(lineItemsToInsert).select();
+    
+    if (liError) {
+      addNotification('danger', `Failed to add order items: ${liError.message}`);
+      await supabase.from('purchase_orders').delete().eq('id', newOrderData.id); // Rollback
+      return;
+    }
+    
+    const newLineItems: OrderLineItem[] = (newLineItemsData || []).map(li => ({
+        id: li.id,
+        orderId: li.order_id,
+        materialId: li.material_id,
+        quantity: li.quantity,
+        unit: li.unit,
+        specifications: li.specifications,
+        size: li.size,
+        brand: li.brand,
+        site: li.site,
+        rate: li.rate,
+        gst: li.gst,
+        discount: li.discount,
+        freight: li.freight,
+        created_at: li.created_at,
+    }));
+
+    const finalOrder = { 
+        id: newOrderData.id,
+        vendorId: newOrderData.vendor_id,
+        notes: newOrderData.notes,
+        priority: newOrderData.priority,
+        status: newOrderData.status,
+        orderedOn: newOrderData.ordered_on,
+        expectedDelivery: newOrderData.expected_delivery,
+        raisedBy: newOrderData.raised_by,
+        autoGenerated: newOrderData.auto_generated,
+        intentId: newOrderData.intent_id,
+        lineItems: newLineItems 
+    } as PurchaseOrder;
+
+    setOrders(prev => [finalOrder, ...prev]);
+    addNotification('success', `Order ${finalOrder.id} created successfully.`);
+  }, [addNotification]);
+
+  const updateOrder = useCallback(async (updatedOrder: PurchaseOrder) => {
+    const { lineItems, ...orderProps } = updatedOrder;
+
+    const { data: updatedOrderData, error } = await supabase.from('purchase_orders').update({
+        vendor_id: orderProps.vendorId,
+        notes: orderProps.notes,
+        priority: orderProps.priority,
+        expected_delivery: orderProps.expectedDelivery,
+    }).eq('id', orderProps.id).select().single();
+
+    if (error || !updatedOrderData) {
+        addNotification('danger', `Failed to update order: ${error?.message}`);
+        return;
+    }
+    
+    await supabase.from('order_line_items').delete().eq('order_id', orderProps.id);
+
+    const lineItemsToInsert = lineItems.map(li => {
+      const {id, orderId, ...rest} = li;
+      return { ...rest, order_id: orderProps.id, material_id: li.materialId };
+    });
+
+    const { data: newLineItemsData, error: liError } = await supabase.from('order_line_items').insert(lineItemsToInsert).select();
+
+    if (liError) {
+        addNotification('danger', `Failed to update order items: ${liError.message}`);
+        fetchData(); 
+        return;
+    }
+
+    const newLineItems: OrderLineItem[] = (newLineItemsData || []).map(li => ({
+        id: li.id,
+        orderId: li.order_id,
+        materialId: li.material_id,
+        quantity: li.quantity,
+        unit: li.unit,
+        specifications: li.specifications,
+        size: li.size,
+        brand: li.brand,
+        site: li.site,
+        rate: li.rate,
+        gst: li.gst,
+        discount: li.discount,
+        freight: li.freight,
+        created_at: li.created_at,
+    }));
+
+    const finalOrder = { 
+        id: updatedOrderData.id,
+        vendorId: updatedOrderData.vendor_id,
+        notes: updatedOrderData.notes,
+        priority: updatedOrderData.priority,
+        status: updatedOrderData.status,
+        orderedOn: updatedOrderData.ordered_on,
+        expectedDelivery: updatedOrderData.expected_delivery,
+        deliveredOn: updatedOrderData.delivered_on,
+        raisedBy: updatedOrderData.raised_by,
+        autoGenerated: updatedOrderData.auto_generated,
+        approvedBy: updatedOrderData.approved_by,
+        approvedOn: updatedOrderData.approved_on,
+        rejectedBy: updatedOrderData.rejected_by,
+        rejectedOn: updatedOrderData.rejected_on,
+        rejectionReason: updatedOrderData.rejection_reason,
+        receivedBy: updatedOrderData.received_by,
+        intentId: updatedOrderData.intent_id,
+        created_at: updatedOrderData.created_at,
+        lineItems: newLineItems
+    } as PurchaseOrder;
+
+    setOrders(prev => prev.map(o => o.id === finalOrder.id ? finalOrder : o));
+    addNotification('success', `Order ${finalOrder.id} updated successfully.`);
+  }, [addNotification, fetchData]);
+  
+  const markOrderAsDelivered = useCallback(async (orderId: string, receivedBy: string) => {
+    const orderToDeliver = orders.find(o => o.id === orderId);
+    if (!orderToDeliver) return;
+
+    try {
+        for (const li of orderToDeliver.lineItems) {
+            const { data: currentItem, error: fetchError } = await supabase.from('inventory').select('quantity').eq('material_id', li.materialId).single();
+            if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
+
+            if (currentItem) {
+                const { error: updateError } = await supabase.from('inventory').update({ quantity: currentItem.quantity + li.quantity }).eq('material_id', li.materialId);
+                if (updateError) throw updateError;
+            } else {
+                const { error: insertError } = await supabase.from('inventory').insert({ material_id: li.materialId, quantity: li.quantity, threshold: 10, unit: li.unit });
+                if (insertError) throw insertError;
+            }
+        }
+    } catch(error: any) {
+        addNotification('danger', `Failed to update inventory: ${error.message}. Delivery not confirmed.`);
+        return;
+    }
+    
+    const { error: updateOrderError } = await supabase.from('purchase_orders')
+      .update({ status: OrderStatus.Delivered, delivered_on: new Date().toISOString().split('T')[0], received_by: receivedBy })
+      .eq('id', orderId);
+
+    if (updateOrderError) {
+        addNotification('danger', `Failed to update order status: ${updateOrderError.message}. Inventory may be inconsistent.`);
+        fetchData();
+        return;
+    }
+    
+    fetchData(); 
+    addNotification('success', `Order ${orderId} marked as delivered. Inventory updated.`);
+  }, [orders, addNotification, fetchData]);
 
 
-  const approveOrder = useCallback((orderId: string) => {
-      const order = orders.find(o => o.id === orderId);
-      if(!order) return;
-      updateOrder({
-          ...order,
+  const approveOrder = useCallback(async (orderId: string) => {
+      const { error } = await supabase.from('purchase_orders').update({
           status: OrderStatus.Pending,
-          approvedBy: 'Manager',
-          approvedOn: new Date().toISOString().split('T')[0]
-      });
+          approved_by: 'Manager', 
+          approved_on: new Date().toISOString().split('T')[0]
+      }).eq('id', orderId);
+
+      if(error) {
+        addNotification('danger', `Approval failed: ${error.message}`);
+        return;
+      }
+      
+      fetchData();
       addNotification('success', `Order ${orderId} has been approved.`);
-  }, [orders, updateOrder, addNotification]);
+  }, [addNotification, fetchData]);
 
-  const rejectOrder = useCallback((orderId: string, reason: string, rejectedBy: string) => {
-      const order = orders.find(o => o.id === orderId);
-      if(!order) return;
-       updateOrder({
-          ...order,
+  const rejectOrder = useCallback(async (orderId: string, reason: string, rejectedBy: string) => {
+      const { error } = await supabase.from('purchase_orders').update({
           status: OrderStatus.Cancelled,
-          rejectedBy,
-          rejectionReason: reason,
-          rejectedOn: new Date().toISOString().split('T')[0]
-      });
-      addNotification('danger', `Order ${orderId} has been rejected.`);
-  }, [orders, updateOrder, addNotification]);
+          rejected_by: rejectedBy,
+          rejection_reason: reason,
+          rejected_on: new Date().toISOString().split('T')[0]
+      }).eq('id', orderId);
+      
+      if(error) {
+        addNotification('danger', `Rejection failed: ${error.message}`);
+        return;
+      }
 
-  // Vendor Management
-  const addVendor = useCallback((name: string) => {
-      setVendors(prev => [...prev, { id: `V-${Date.now()}`, name }]);
+      fetchData();
+      addNotification('danger', `Order ${orderId} has been rejected.`);
+  }, [addNotification, fetchData]);
+
+  const addVendor = useCallback(async (name: string) => {
+      const { data, error } = await supabase.from('vendors').insert({ name }).select().single();
+      if (error) { addNotification('danger', error.message); return; }
+      setVendors(prev => [...prev, data]);
       addNotification('success', `Vendor "${name}" added.`);
   }, [addNotification]);
-  const updateVendor = useCallback((vendor: Vendor) => {
-      setVendors(prev => prev.map(v => v.id === vendor.id ? vendor : v));
+  
+  const updateVendor = useCallback(async (vendor: Vendor) => {
+      const { data, error } = await supabase.from('vendors').update({ name: vendor.name }).eq('id', vendor.id).select().single();
+      if (error) { addNotification('danger', error.message); return; }
+      setVendors(prev => prev.map(v => v.id === vendor.id ? data : v));
       addNotification('success', `Vendor "${vendor.name}" updated.`);
   }, [addNotification]);
-  const deleteVendor = useCallback((vendorId: string) => {
+
+  const deleteVendor = useCallback(async (vendorId: string) => {
       const vendorName = vendors.find(v => v.id === vendorId)?.name;
+      const { error } = await supabase.from('vendors').delete().eq('id', vendorId);
+      if (error) { addNotification('danger', error.message); return; }
       setVendors(prev => prev.filter(v => v.id !== vendorId));
       addNotification('danger', `Vendor "${vendorName}" deleted.`);
   }, [addNotification, vendors]);
 
-  // Material Management
-  const addMaterial = useCallback((name: string, unit: string) => {
-      setMaterials(prev => [...prev, { id: `M-${Date.now()}`, name, unit }]);
+  const addMaterial = useCallback(async (name: string, unit: string) => {
+      const { data, error } = await supabase.from('materials').insert({ name, unit }).select().single();
+      if (error) { addNotification('danger', error.message); return; }
+      setMaterials(prev => [...prev, data]);
       addNotification('success', `Material "${name}" added.`);
   }, [addNotification]);
-  const updateMaterial = useCallback((material: Material) => {
-      setMaterials(prev => prev.map(m => m.id === material.id ? material : m));
+
+  const updateMaterial = useCallback(async (material: Material) => {
+      const { data, error } = await supabase.from('materials').update({ name: material.name, unit: material.unit }).eq('id', material.id).select().single();
+      if (error) { addNotification('danger', error.message); return; }
+      setMaterials(prev => prev.map(m => m.id === material.id ? data : m));
       addNotification('success', `Material "${material.name}" updated.`);
   }, [addNotification]);
-  const deleteMaterial = useCallback((materialId: string) => {
+
+  const deleteMaterial = useCallback(async (materialId: string) => {
       const materialName = materials.find(m => m.id === materialId)?.name;
+      const { error } = await supabase.from('materials').delete().eq('id', materialId);
+      if (error) { addNotification('danger', error.message); return; }
       setMaterials(prev => prev.filter(m => m.id !== materialId));
       addNotification('danger', `Material "${materialName}" deleted.`);
   }, [addNotification, materials]);
 
-  // Site Management
-  const addSite = useCallback((name: string) => {
-      setSites(prev => [...prev, { id: `S-${Date.now()}`, name }]);
+  const addSite = useCallback(async (name: string) => {
+      const { data, error } = await supabase.from('sites').insert({ name }).select().single();
+      if (error) { addNotification('danger', error.message); return; }
+      setSites(prev => [...prev, data]);
       addNotification('success', `Site "${name}" added.`);
   }, [addNotification]);
-  const updateSite = useCallback((site: Site) => {
-      setSites(prev => prev.map(s => s.id === site.id ? site : s));
+
+  const updateSite = useCallback(async (site: Site) => {
+      const { data, error } = await supabase.from('sites').update({ name: site.name }).eq('id', site.id).select().single();
+      if (error) { addNotification('danger', error.message); return; }
+      setSites(prev => prev.map(s => s.id === site.id ? data : s));
       addNotification('success', `Site "${site.name}" updated.`);
   }, [addNotification]);
-  const deleteSite = useCallback((siteId: string) => {
+
+  const deleteSite = useCallback(async (siteId: string) => {
       const siteName = sites.find(s => s.id === siteId)?.name;
+      const { error } = await supabase.from('sites').delete().eq('id', siteId);
+      if (error) { addNotification('danger', error.message); return; }
       setSites(prev => prev.filter(s => s.id !== siteId));
       addNotification('danger', `Site "${siteName}" deleted.`);
   }, [addNotification, sites]);
 
-  // Material Issuance
-  const issueMaterial = useCallback((materialId: string, quantity: number, unit: string, issuedToSite: string, notes: string | undefined, issuedBy: string) => {
-      setInventory(prev => prev.map(item => item.id === materialId ? { ...item, quantity: item.quantity - quantity } : item));
-      setIssuances(prev => [...prev, {
-          id: `ISS-${Date.now()}`,
-          materialId,
-          quantity,
-          unit,
-          issuedToSite,
-          issuedBy,
-          issuedOn: new Date().toISOString().split('T')[0],
-          notes,
-      }]);
-      const materialName = materials.find(m => m.id === materialId)?.name;
-      addNotification('success', `${quantity} ${unit} of ${materialName} issued to ${issuedToSite}.`);
-  }, [addNotification, materials]);
+  const issueMaterial = useCallback(async (materialId: string, quantity: number, unit: string, issuedToSite: string, notes: string | undefined, issuedBy: string) => {
+    const { data: currentItem, error: fetchError } = await supabase.from('inventory').select('quantity').eq('material_id', materialId).single();
+    if (fetchError || !currentItem || currentItem.quantity < quantity) {
+        addNotification('danger', fetchError ? fetchError.message : 'Insufficient stock.');
+        return;
+    }
+    const { error: updateError } = await supabase.from('inventory').update({ quantity: currentItem.quantity - quantity }).eq('material_id', materialId);
+    if(updateError) { addNotification('danger', `Failed to update inventory: ${updateError.message}`); return; }
 
-  // Purchase Intent
-  const addPurchaseIntent = useCallback((intent: Omit<PurchaseIntent, 'id' | 'requestedOn' | 'status'>) => {
-    const newIntent: PurchaseIntent = {
-      ...intent,
-      id: `PI-${Date.now()}`,
-      requestedOn: new Date().toISOString().split('T')[0],
-      status: PurchaseIntentStatus.Pending,
-    };
-    setPurchaseIntents(prev => [newIntent, ...prev]);
-    addNotification('success', `Purchase Intent ${newIntent.id} raised successfully.`);
-  }, [addNotification]);
+    const { error: insertError } = await supabase.from('material_issuances').insert({
+        material_id: materialId, quantity, unit, issued_to_site: issuedToSite, notes, issued_by: issuedBy, issued_on: new Date().toISOString().split('T')[0],
+    });
+    if (insertError) {
+        addNotification('danger', `Failed to record issuance: ${insertError.message}`);
+        await supabase.from('inventory').update({ quantity: currentItem.quantity }).eq('material_id', materialId); // Rollback
+        return;
+    }
+    fetchData();
+    const materialName = materials.find(m => m.id === materialId)?.name;
+    addNotification('success', `${quantity} ${unit} of ${materialName} issued to ${issuedToSite}.`);
+  }, [addNotification, materials, fetchData]);
+
+  const addPurchaseIntent = useCallback(async (intent: Omit<PurchaseIntent, 'id' | 'requestedOn' | 'status'>) => {
+    const { lineItems, ...intentProps } = intent;
+    const { data, error } = await supabase.from('purchase_intents').insert({
+        ...intentProps,
+        requested_by: intent.requestedBy,
+        requested_on: new Date().toISOString().split('T')[0],
+        status: PurchaseIntentStatus.Pending,
+    }).select().single();
+    
+    if (error || !data) { addNotification('danger', `Failed to create intent: ${error?.message}`); return; }
+    
+    const liToInsert = lineItems.map(li => ({ ...li, intent_id: data.id, material_id: li.materialId }));
+    const { error: liError } = await supabase.from('purchase_intent_line_items').insert(liToInsert);
+    
+    if (liError) {
+        addNotification('danger', `Failed to add intent items: ${liError.message}`);
+        await supabase.from('purchase_intents').delete().eq('id', data.id); // Rollback
+        return;
+    }
+    
+    fetchData();
+    addNotification('success', `Purchase Intent ${data.id} raised successfully.`);
+  }, [addNotification, fetchData]);
   
-  const approvePurchaseIntent = useCallback((intentId: string) => {
-    setPurchaseIntents(prev => prev.map(i => i.id === intentId ? {...i, status: PurchaseIntentStatus.Approved} : i));
+  const approvePurchaseIntent = useCallback(async (intentId: string) => {
+    const { error } = await supabase.from('purchase_intents').update({ status: PurchaseIntentStatus.Approved }).eq('id', intentId);
+    if(error) { addNotification('danger', error.message); return; }
+    fetchData();
     addNotification('success', `Intent ${intentId} approved for PO creation.`);
-  }, [addNotification]);
+  }, [addNotification, fetchData]);
 
-  const rejectPurchaseIntent = useCallback((intentId: string, reason: string, reviewedBy: string) => {
-    setPurchaseIntents(prev => prev.map(i => i.id === intentId ? {...i, status: PurchaseIntentStatus.Rejected, rejectionReason: reason, reviewedBy, reviewedOn: new Date().toISOString().split('T')[0]} : i));
+  const rejectPurchaseIntent = useCallback(async (intentId: string, reason: string, reviewedBy: string) => {
+    const { error } = await supabase.from('purchase_intents').update({ 
+        status: PurchaseIntentStatus.Rejected, 
+        rejection_reason: reason, 
+        reviewed_by: reviewedBy, 
+        reviewed_on: new Date().toISOString().split('T')[0] 
+    }).eq('id', intentId);
+    if(error) { addNotification('danger', error.message); return; }
+    fetchData();
     addNotification('danger', `Intent ${intentId} has been rejected.`);
-  }, [addNotification]);
+  }, [addNotification, fetchData]);
   
   const convertIntentToOrder = useCallback((intentId: string): Partial<PurchaseOrder> => {
       const intent = purchaseIntents.find(i => i.id === intentId);
       if (!intent) return {};
       
       const lineItems: Partial<OrderLineItem>[] = intent.lineItems.map(li => ({
-          materialId: li.materialId,
-          quantity: li.quantity,
-          unit: li.unit,
-          site: li.site,
-          specifications: li.notes || '',
-          gst: 18,
+          materialId: li.materialId, quantity: li.quantity, unit: li.unit, site: li.site, specifications: li.notes || '', gst: 18, rate: 0,
       }));
 
-      setPurchaseIntents(prev => prev.map(i => i.id === intentId ? {...i, status: PurchaseIntentStatus.Converted} : i));
+      supabase.from('purchase_intents').update({ status: PurchaseIntentStatus.Converted }).eq('id', intentId).then(({error}) => {
+          if(error) addNotification('warning', `Failed to update intent status: ${error.message}`);
+          else setPurchaseIntents(prev => prev.map(i => i.id === intentId ? {...i, status: PurchaseIntentStatus.Converted} : i));
+      });
       addNotification('info', `Creating new PO from Intent ${intentId}.`);
 
       return {
           lineItems: lineItems as OrderLineItem[],
-          notes: `Generated from Purchase Intent ${intent.id}. Reason: ${intent.notes}`,
+          notes: `Generated from Purchase Intent ${intent.id}. Reason: ${intent.notes || 'N/A'}`,
           intentId: intent.id,
       };
   }, [purchaseIntents, addNotification]);
 
-  const setOpeningStock = useCallback((payload: { updatedStocks: { materialId: string; quantity: number, unit: string }[]; newItems: { name: string; unit: string; quantity: number }[] }) => {
-    const newMaterials = payload.newItems.map(item => {
-        const newMaterial: Material = { id: `M-new-${Date.now()}-${Math.random()}`, name: item.name, unit: item.unit };
-        return newMaterial;
-    });
+  const setOpeningStock = useCallback(async (payload: { updatedStocks: { materialId: string; quantity: number, unit: string }[]; newItems: { name: string; unit: string; quantity: number }[] }) => {
+    const newMaterialsToInsert = payload.newItems.map(item => ({ name: item.name, unit: item.unit }));
+    let newMaterials: Material[] = [];
+
+    if (newMaterialsToInsert.length > 0) {
+        const { data, error } = await supabase.from('materials').insert(newMaterialsToInsert).select();
+        if (error || !data) { addNotification('danger', `Failed to add new materials: ${error?.message}`); return; }
+        newMaterials = data;
+    }
+
+    const inventoryUpserts = payload.updatedStocks.map(s => ({ material_id: s.materialId, quantity: s.quantity, unit: s.unit, threshold: inventory.find(i => i.id === s.materialId)?.threshold || 10 }));
     
-    if (newMaterials.length > 0) {
-        setMaterials(prev => [...prev, ...newMaterials]);
-    }
-
-    setInventory(prev => {
-        let updated = [...prev];
-        payload.updatedStocks.forEach(stock => {
-            const index = updated.findIndex(i => i.id === stock.materialId);
-            if(index > -1) {
-              updated[index].quantity = stock.quantity;
-              updated[index].unit = stock.unit; // Also update unit here
-            }
-        });
-        payload.newItems.forEach((item, i) => {
-            updated.push({
-                id: newMaterials[i].id,
-                name: item.name,
-                unit: item.unit,
-                quantity: item.quantity,
-                threshold: 10 // default threshold
-            })
-        })
-        return updated;
+    newMaterials.forEach((mat, i) => {
+        const newItem = payload.newItems[i];
+        inventoryUpserts.push({ material_id: mat.id, quantity: newItem.quantity, unit: newItem.unit, threshold: 10 });
     });
 
-    setMaterials(prev => {
-      let updated = [...prev];
-      payload.updatedStocks.forEach(stock => {
-        const index = updated.findIndex(m => m.id === stock.materialId);
-        if (index > -1) {
-          updated[index].unit = stock.unit;
-        }
-      });
-      return updated;
-    });
+    const { error: upsertError } = await supabase.from('inventory').upsert(inventoryUpserts, { onConflict: 'material_id' });
+    if(upsertError) { addNotification('danger', `Failed to update stock: ${upsertError.message}`); return; }
+    
+    fetchData();
     addNotification('success', 'Stock levels have been updated.');
-  }, [addNotification]);
+  }, [addNotification, fetchData, inventory]);
 
-  const addBulkStock = useCallback((data: { name: string; unit: string; quantity: number; threshold: number }[]) => {
-      let newMaterials: Material[] = [];
-      let newInventoryItems: InventoryItem[] = [];
-      const updatedInventory = [...inventory];
-
-      data.forEach(item => {
-          const existingMaterial = materials.find(m => m.name.toLowerCase() === item.name.toLowerCase());
-          if (existingMaterial) {
-              const invIndex = updatedInventory.findIndex(i => i.id === existingMaterial.id);
-              if (invIndex > -1) {
-                  updatedInventory[invIndex] = { ...updatedInventory[invIndex], quantity: item.quantity, threshold: item.threshold, unit: item.unit };
-              }
-          } else {
-              const newMat: Material = { id: `M-bulk-${Date.now()}-${item.name}`, name: item.name, unit: item.unit };
-              newMaterials.push(newMat);
-              newInventoryItems.push({ ...newMat, quantity: item.quantity, threshold: item.threshold });
+  const addBulkStock = useCallback(async (data: { name: string; unit: string; quantity: number; threshold: number }[]) => {
+      await Promise.all(data.map(async item => {
+          let material = materials.find(m => m.name.toLowerCase() === item.name.toLowerCase());
+          if (!material) {
+              const { data: newMat, error } = await supabase.from('materials').insert({ name: item.name, unit: item.unit }).select().single();
+              if (error || !newMat) { console.error(error); return; }
+              material = newMat;
           }
-      });
-      setMaterials(prev => [...prev, ...newMaterials]);
-      setInventory([...updatedInventory, ...newInventoryItems]);
+          await supabase.from('inventory').upsert({ material_id: material.id, quantity: item.quantity, threshold: item.threshold, unit: item.unit }, { onConflict: 'material_id' });
+      }));
+      fetchData();
       addNotification('success', `${data.length} stock records processed from upload.`);
-  }, [materials, inventory, addNotification]);
+  }, [materials, addNotification, fetchData]);
   
-  const addBulkMaterials = useCallback((data: { name: string, unit?: string }[]) => {
-    const newMaterials = data
-        .filter(d => !materials.some(m => m.name.toLowerCase() === d.name.toLowerCase()))
-        .map(d => ({ id: `M-bulk-${Date.now()}-${d.name}`, name: d.name, unit: d.unit || 'Nos.' }));
-    setMaterials(prev => [...prev, ...newMaterials]);
+  const addBulkMaterials = useCallback(async (data: { name: string, unit?: string }[]) => {
+    const newMaterials = data.filter(d => !materials.some(m => m.name.toLowerCase() === d.name.toLowerCase())).map(d => ({ name: d.name, unit: d.unit || 'Nos.' }));
+    if(newMaterials.length === 0) { addNotification('info', 'All materials already exist.'); return; }
+    await supabase.from('materials').insert(newMaterials);
+    fetchData();
     addNotification('success', `${newMaterials.length} new materials added.`);
-  }, [materials, addNotification]);
+  }, [materials, addNotification, fetchData]);
 
-  const addBulkVendors = useCallback((data: { name: string }[]) => {
-    const newVendors = data
-        .filter(d => !vendors.some(v => v.name.toLowerCase() === d.name.toLowerCase()))
-        .map(d => ({ id: `V-bulk-${Date.now()}-${d.name}`, name: d.name }));
-    setVendors(prev => [...prev, ...newVendors]);
+  const addBulkVendors = useCallback(async (data: { name: string }[]) => {
+    const newVendors = data.filter(d => !vendors.some(v => v.name.toLowerCase() === d.name.toLowerCase()));
+    if(newVendors.length === 0) { addNotification('info', 'All vendors already exist.'); return; }
+    await supabase.from('vendors').insert(newVendors);
+    fetchData();
     addNotification('success', `${newVendors.length} new vendors added.`);
-  }, [vendors, addNotification]);
+  }, [vendors, addNotification, fetchData]);
 
-  const addBulkSites = useCallback((data: { name: string }[]) => {
-    const newSites = data
-        .filter(d => !sites.some(s => s.name.toLowerCase() === d.name.toLowerCase()))
-        .map(d => ({ id: `S-bulk-${Date.now()}-${d.name}`, name: d.name }));
-    setSites(prev => [...prev, ...newSites]);
+  const addBulkSites = useCallback(async (data: { name: string }[]) => {
+    const newSites = data.filter(d => !sites.some(s => s.name.toLowerCase() === d.name.toLowerCase()));
+    if(newSites.length === 0) { addNotification('info', 'All sites already exist.'); return; }
+    await supabase.from('sites').insert(newSites);
+    fetchData();
     addNotification('success', `${newSites.length} new sites/clients added.`);
-  }, [sites, addNotification]);
+  }, [sites, addNotification, fetchData]);
 
-  const updateInventoryItem = useCallback((itemId: string, updates: Partial<InventoryItem>) => {
-    setInventory(prev => prev.map(item => item.id === itemId ? { ...item, ...updates } : item));
-    if (updates.unit) {
-        setMaterials(prev => prev.map(mat => mat.id === itemId ? { ...mat, unit: updates.unit! } : mat));
+  const updateInventoryItem = useCallback(async (itemId: string, updates: Partial<InventoryItem>) => {
+    const { unit, ...invUpdates } = updates;
+    if (Object.keys(invUpdates).length > 0) {
+        await supabase.from('inventory').update(invUpdates).eq('material_id', itemId);
     }
+    if (unit) {
+        await supabase.from('materials').update({ unit }).eq('id', itemId);
+    }
+    fetchData();
     addNotification('success', `Inventory item updated successfully.`);
-  }, [addNotification]);
+  }, [addNotification, fetchData]);
 
 
   const value = {
@@ -405,7 +678,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     addBulkMaterials, addBulkVendors, addBulkSites, updateInventoryItem
   };
 
-  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+  return <AppContext.Provider value={value}>{!loading && children}</AppContext.Provider>;
 };
 
 export const useAppContext = () => {

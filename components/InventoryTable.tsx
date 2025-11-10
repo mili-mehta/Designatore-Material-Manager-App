@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { InventoryItem } from '../types';
-// FIX: Corrected import path casing to resolve module resolution conflict.
-import { MagnifyingGlassIcon, PencilIcon, CheckCircleIcon, XMarkIcon, CubeIcon } from './Icons';
+// FIX: Standardized icon import to use './icons' to resolve filename casing conflict.
+import { MagnifyingGlassIcon, PencilIcon, CheckCircleIcon, XMarkIcon, CubeIcon } from './icons';
 import { UNITS } from '../constants';
 import EmptyState from './EmptyState';
 

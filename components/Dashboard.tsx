@@ -22,6 +22,7 @@ import DeliveryConfirmationModal from './DeliveryConfirmationModal';
 import DashboardHome from './DashboardHome';
 import PurchaseIntentDetailsModal from './PurchaseIntentDetailsModal';
 
+// FIX: Standardized icon import to use './icons' to resolve filename casing conflict.
 import { 
     Squares2X2Icon, 
     ArchiveBoxIcon, 
@@ -38,7 +39,7 @@ import {
     UsersIcon,
     CubeIcon,
     TruckIcon
-} from './Icons';
+} from './icons';
 
 
 type View = 'dashboard' | 'inventory' | 'order_history' | 'reports' | 'issuance_history' | 'intents_all';

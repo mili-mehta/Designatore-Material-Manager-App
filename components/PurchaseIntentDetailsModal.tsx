@@ -1,7 +1,8 @@
 import React from 'react';
 import { PurchaseIntent, Material, User, PurchaseIntentStatus } from '../types';
 import Modal from './Modal';
-import { HandThumbUpIcon, HandThumbDownIcon, ArrowRightCircleIcon } from './Icons';
+// FIX: Standardized icon import to use './icons' to resolve filename casing conflict.
+import { HandThumbUpIcon, HandThumbDownIcon, ArrowRightCircleIcon } from './icons';
 
 interface PurchaseIntentDetailsModalProps {
   isOpen: boolean;
@@ -24,6 +25,7 @@ const PurchaseIntentDetailsModal: React.FC<PurchaseIntentDetailsModalProps> = ({
   onReject,
   onCreateOrder,
 }) => {
+  if (!isOpen) return null;
 
   const getStatusClass = (status: PurchaseIntentStatus) => {
     switch (status) {
@@ -34,12 +36,14 @@ const PurchaseIntentDetailsModal: React.FC<PurchaseIntentDetailsModalProps> = ({
       default: return 'bg-gray-100 text-gray-700';
     }
   };
-  
-  const canPerformActions = currentUser.role === 'purchaser';
+
+  const canApproveReject = currentUser.role === 'manager' && intent.status === PurchaseIntentStatus.Pending && onApprove && onReject;
+  const canCreatePO = (currentUser.role === 'manager' || currentUser.role === 'purchaser') && intent.status === PurchaseIntentStatus.Approved && onCreateOrder;
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={`Intent Details: ${intent.id}`}>
       <div className="space-y-6">
+        {/* Header Info */}
         <div className="p-5 bg-gray-50 rounded-lg border border-gray-200">
             <div className="flex justify-between items-start mb-4">
                 <div>
@@ -52,33 +56,36 @@ const PurchaseIntentDetailsModal: React.FC<PurchaseIntentDetailsModalProps> = ({
                     </span>
                  </div>
             </div>
+            {/* FIX: Replaced non-existent 'rejectedBy' with 'reviewedBy' and adjusted logic based on intent status. */}
+            {intent.reviewedBy && (
+                <dl className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm border-t border-gray-200 pt-4">
+                    <div>
+                        <dt className="font-medium text-gray-500">
+                            {intent.status === PurchaseIntentStatus.Rejected ? 'Rejected By' : 'Reviewed By'}
+                        </dt>
+                        <dd className="text-gray-900 font-medium mt-0.5">{intent.reviewedBy} on <span className="font-mono">{intent.reviewedOn}</span></dd>
+                    </div>
+                </dl>
+             )}
         </div>
 
-        {(intent.reviewedBy || intent.rejectionReason) && (
+        {intent.rejectionReason && (
             <div>
-                <h4 className="text-base font-semibold text-gray-700 mb-2">Review Status</h4>
-                <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 text-sm space-y-1">
-                    {intent.reviewedBy && (
-                        <p>Reviewed by <span className="font-semibold">{intent.reviewedBy}</span> on <span className="font-mono">{intent.reviewedOn}</span></p>
-                    )}
-                    {intent.rejectionReason && (
-                        <div className="pt-1">
-                            <p className="text-gray-600"><span className="font-semibold">Rejection Reason:</span> {intent.rejectionReason}</p>
-                        </div>
-                    )}
-                </div>
-            )}
+                <h4 className="text-sm font-semibold text-gray-600 mb-1">Rejection Reason</h4>
+                <p className="p-3 bg-red-50 text-red-800 rounded-md whitespace-pre-wrap text-sm border border-red-200">{intent.rejectionReason}</p>
+            </div>
         )}
 
+        {/* Line Items Table */}
         <div>
             <h4 className="text-base font-semibold text-gray-700 mb-2">Requested Items</h4>
-            <div className="overflow-x-auto border border-gray-200 rounded-lg max-h-60">
+            <div className="overflow-x-auto border border-gray-200 rounded-lg">
                 <table className="w-full text-left text-sm">
-                    <thead className="bg-gray-50 sticky top-0">
+                    <thead className="bg-gray-50">
                         <tr className="border-b border-gray-200">
                             <th className="p-3 font-semibold text-gray-600">Material</th>
                             <th className="p-3 font-semibold text-gray-600 text-right">Qty</th>
-                            <th className="p-3 font-semibold text-gray-600">Site/Client</th>
+                            <th className="p-3 font-semibold text-gray-600">Site</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
@@ -106,35 +113,47 @@ const PurchaseIntentDetailsModal: React.FC<PurchaseIntentDetailsModalProps> = ({
                 <p className="p-3 bg-gray-50 rounded-md text-gray-700 whitespace-pre-wrap text-sm border border-gray-200">{intent.notes}</p>
             </div>
         )}
-        
+
+        {/* Action buttons */}
         <div className="flex justify-between items-center pt-6 border-t border-gray-200">
-            <button
+             <button
                 type="button"
                 onClick={onClose}
                 className="px-5 py-2.5 bg-white border border-gray-300 hover:bg-gray-100 rounded-md text-gray-800 font-semibold transition"
-            >
+                >
                 Close
             </button>
-             <div className="flex items-center justify-center gap-3">
-              {canPerformActions && (
-                <>
-                  {intent.status === PurchaseIntentStatus.Pending && onApprove && onReject && (
+            <div className="flex items-center gap-3">
+                {canApproveReject && (
                     <>
-                      <button onClick={() => onReject(intent)} className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-md transition shadow-sm">
-                        <HandThumbDownIcon className="w-5 h-5" /> Reject
-                      </button>
-                       <button onClick={() => onApprove(intent.id)} className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-white bg-green-600 hover:bg-green-700 rounded-md transition shadow-sm">
-                        <HandThumbUpIcon className="w-5 h-5" /> Approve
-                      </button>
+                        <button
+                            type="button"
+                            onClick={() => onReject?.(intent)}
+                            className="px-5 py-2.5 bg-red-600 hover:bg-red-700 rounded-md text-white font-semibold transition shadow-sm flex items-center gap-2"
+                        >
+                            <HandThumbDownIcon className="w-5 h-5" />
+                            Reject
+                        </button>
+                         <button
+                            type="button"
+                            onClick={() => onApprove?.(intent.id)}
+                            className="px-5 py-2.5 bg-green-600 hover:bg-green-700 rounded-md text-white font-semibold transition shadow-sm flex items-center gap-2"
+                        >
+                            <HandThumbUpIcon className="w-5 h-5" />
+                            Approve
+                        </button>
                     </>
-                  )}
-                  {intent.status === PurchaseIntentStatus.Approved && onCreateOrder && (
-                    <button onClick={() => onCreateOrder(intent)} className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-semibold text-white bg-primary-600 hover:bg-primary-700 rounded-md transition shadow-sm">
-                      <ArrowRightCircleIcon className="w-5 h-5" /> Create PO
+                )}
+                 {canCreatePO && (
+                     <button
+                        type="button"
+                        onClick={() => onCreateOrder?.(intent)}
+                        className="px-6 py-2.5 bg-primary-600 hover:bg-primary-700 rounded-md text-white font-semibold transition shadow-sm flex items-center gap-2"
+                    >
+                        Create Purchase Order
+                        <ArrowRightCircleIcon className="w-5 h-5" />
                     </button>
-                  )}
-                </>
-              )}
+                 )}
             </div>
         </div>
       </div>

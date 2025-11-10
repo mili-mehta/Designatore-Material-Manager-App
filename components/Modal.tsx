@@ -1,6 +1,6 @@
 import React, { ReactNode } from 'react';
-// FIX: To resolve a filename casing conflict, standardized icon import to use './Icons'.
-import { XMarkIcon } from './Icons';
+// FIX: Standardized icon import to use './icons' to resolve filename casing conflict.
+import { XMarkIcon } from './icons';
 
 interface ModalProps {
   isOpen: boolean;

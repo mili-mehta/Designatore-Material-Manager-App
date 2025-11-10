@@ -28,16 +28,19 @@ export interface Material {
   id: string;
   name: string;
   unit: string;
+  created_at?: string;
 }
 
 export interface Vendor {
   id: string;
   name: string;
+  created_at?: string;
 }
 
 export interface Site {
   id: string;
   name: string;
+  created_at?: string;
 }
 
 export interface InventoryItem {
@@ -46,6 +49,7 @@ export interface InventoryItem {
   unit: string;
   quantity: number;
   threshold: number;
+  created_at?: string;
 }
 
 export interface OrderLineItem {
@@ -62,6 +66,7 @@ export interface OrderLineItem {
   gst: number;
   discount?: number;
   freight?: number;
+  created_at?: string;
 }
 
 export interface PurchaseOrder {
@@ -83,6 +88,7 @@ export interface PurchaseOrder {
   rejectionReason?: string;
   receivedBy?: string;
   intentId?: string;
+  created_at?: string;
 }
 
 export interface MaterialIssuance {
@@ -94,15 +100,18 @@ export interface MaterialIssuance {
   issuedBy: string;
   issuedOn: string; // YYYY-MM-DD
   notes?: string;
+  created_at?: string;
 }
 
 export interface PurchaseIntentLineItem {
   id: string;
+  intentId?: string;
   materialId: string;
   quantity: number;
   unit: string;
   site?: string;
   notes?: string;
+  created_at?: string;
 }
 
 export interface PurchaseIntent {
@@ -115,6 +124,7 @@ export interface PurchaseIntent {
   reviewedBy?: string;
   reviewedOn?: string;
   rejectionReason?: string;
+  created_at?: string;
 }
 
 export interface AppNotification {

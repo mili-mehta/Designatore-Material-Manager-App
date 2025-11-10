@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { PurchaseOrder, OrderStatus, Priority, Vendor, Material, User } from '../types';
-import { CheckCircleIcon, MagnifyingGlassIcon, PencilIcon, TrashIcon, HandThumbUpIcon, HandThumbDownIcon, ArchiveBoxIcon } from './Icons';
+// FIX: Standardized icon import to use './icons' to resolve filename casing conflict.
+import { CheckCircleIcon, MagnifyingGlassIcon, PencilIcon, TrashIcon, HandThumbUpIcon, HandThumbDownIcon, ArchiveBoxIcon } from './icons';
 import EmptyState from './EmptyState';
 
 interface OrderTableProps {

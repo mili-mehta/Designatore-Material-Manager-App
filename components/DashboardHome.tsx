@@ -5,7 +5,8 @@ import StatCard from './StatCard';
 import LowStockAlerts from './LowStockAlerts';
 import OrderTable from './OrderTable';
 import PurchaseIntentsTable from './PurchaseIntentsTable';
-import { ArchiveBoxIcon, AlertTriangleIcon, ClipboardDocumentCheckIcon } from './Icons';
+// FIX: Standardized icon import to use './icons' to resolve filename casing conflict.
+import { ArchiveBoxIcon, AlertTriangleIcon, ClipboardDocumentCheckIcon } from './icons';
 
 interface DashboardHomeProps {
     currentUser: User;

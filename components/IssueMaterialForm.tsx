@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { InventoryItem, Site, User } from '../types';
 import { UNITS } from '../constants';
-import { PlusIcon, TrashIcon } from './Icons';
+// FIX: Standardized icon import to use './icons' to resolve filename casing conflict.
+import { PlusIcon, TrashIcon } from './icons';
 
 interface IssueMaterialFormProps {
   onIssue: (items: {
