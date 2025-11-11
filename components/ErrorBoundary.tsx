@@ -10,10 +10,8 @@ interface State {
 }
 
 class ErrorBoundary extends Component<Props, State> {
-  // FIX: Converted state initialization to a constructor. This is a more traditional
-  // React pattern that can resolve subtle issues with 'this' context and property
-  // initialization in some toolchains, which may be the cause of the error
-  // "Property 'props' does not exist on type 'ErrorBoundary'".
+  // FIX: Replaced the state class property with a constructor calling super(props)
+  // to ensure 'this.props' is correctly initialized and typed, resolving the "Property 'props' does not exist" error.
   constructor(props: Props) {
     super(props);
     this.state = {

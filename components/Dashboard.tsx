@@ -23,7 +23,7 @@ import DashboardHome from './DashboardHome';
 import PurchaseIntentDetailsModal from './PurchaseIntentDetailsModal';
 import LowStockAlerts from './LowStockAlerts';
 
-// FIX: Standardized icon import to use './Icons' to resolve filename casing conflict.
+// FIX: Standardized icon import to use './icons' (lowercase) to resolve filename casing conflict.
 import { 
     Squares2X2Icon, 
     ArchiveBoxIcon, 
@@ -41,7 +41,7 @@ import {
     CubeIcon,
     TruckIcon,
     AlertTriangleIcon
-} from './Icons';
+} from './icons';
 
 
 type View = 'dashboard' | 'inventory' | 'low_stock' | 'order_history' | 'reports' | 'issuance_history' | 'intents_all';
