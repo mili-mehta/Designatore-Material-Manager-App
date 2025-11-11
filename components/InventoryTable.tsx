@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { InventoryItem } from '../types';
-// FIX: Standardized icon import to use './icons' to resolve filename casing conflict.
-import { MagnifyingGlassIcon, PencilIcon, CheckCircleIcon, XMarkIcon, CubeIcon } from './icons';
+// FIX: Standardized icon import to use './Icons' to resolve filename casing conflict.
+import { MagnifyingGlassIcon, PencilIcon, CheckCircleIcon, XMarkIcon, CubeIcon } from './Icons';
 import { UNITS } from '../constants';
 import EmptyState from './EmptyState';
 

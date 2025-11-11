@@ -10,8 +10,6 @@ interface State {
 }
 
 class ErrorBoundary extends Component<Props, State> {
-  public state: State;
-
   // FIX: Converted state initialization to a constructor. This is a more traditional
   // React pattern that can resolve subtle issues with 'this' context and property
   // initialization in some toolchains, which may be the cause of the error

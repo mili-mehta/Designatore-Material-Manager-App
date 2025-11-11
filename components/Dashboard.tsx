@@ -21,8 +21,9 @@ import OpeningStockModal from './OpeningStockModal';
 import DeliveryConfirmationModal from './DeliveryConfirmationModal';
 import DashboardHome from './DashboardHome';
 import PurchaseIntentDetailsModal from './PurchaseIntentDetailsModal';
+import LowStockAlerts from './LowStockAlerts';
 
-// FIX: Standardized icon import to use './icons' to resolve filename casing conflict.
+// FIX: Standardized icon import to use './Icons' to resolve filename casing conflict.
 import { 
     Squares2X2Icon, 
     ArchiveBoxIcon, 
@@ -38,11 +39,12 @@ import {
     ArrowUpTrayIcon,
     UsersIcon,
     CubeIcon,
-    TruckIcon
-} from './icons';
+    TruckIcon,
+    AlertTriangleIcon
+} from './Icons';
 
 
-type View = 'dashboard' | 'inventory' | 'order_history' | 'reports' | 'issuance_history' | 'intents_all';
+type View = 'dashboard' | 'inventory' | 'low_stock' | 'order_history' | 'reports' | 'issuance_history' | 'intents_all';
 
 const Dashboard: React.FC<{ currentUser: User }> = ({ currentUser }) => {
     const {
@@ -99,6 +101,8 @@ const Dashboard: React.FC<{ currentUser: User }> = ({ currentUser }) => {
 
     const [selectedOrder, setSelectedOrder] = useState<PurchaseOrder | Partial<PurchaseOrder> | null>(null);
     const [selectedIntent, setSelectedIntent] = useState<PurchaseIntent | null>(null);
+
+    const lowStockItems = useMemo(() => inventory.filter(i => i.quantity <= i.threshold), [inventory]);
 
     const handleEditOrder = (order: PurchaseOrder) => {
         setSelectedOrder(order);
@@ -200,11 +204,11 @@ const Dashboard: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                     onApproveOrder={approveOrder}
                     onRejectOrder={handleRejectOrderClick}
                     onConfirmDelivery={handleConfirmDeliveryClick}
-                    onCreateOrderForLowStock={handleCreateOrderForLowStock}
                     onViewIntent={handleViewIntent}
                 />
             );
             case 'inventory': return <InventoryTable inventory={inventory} onUpdateItem={updateInventoryItem} />;
+            case 'low_stock': return <LowStockAlerts lowStockItems={lowStockItems} onCreateOrder={handleCreateOrderForLowStock} />;
             case 'order_history': return <OrderHistory orders={orders} vendors={vendors} materials={materials} onBack={() => setView('dashboard')} />;
             case 'issuance_history': return <IssuanceHistory issuances={issuances} materials={materials} sites={sites} onBack={() => setView('dashboard')} />;
             case 'reports': return <Reports orders={orders} vendors={vendors} materials={materials} currentUser={currentUser} inventory={inventory} issuances={issuances} purchaseIntents={purchaseIntents} sites={sites} />;
@@ -228,6 +232,7 @@ const Dashboard: React.FC<{ currentUser: User }> = ({ currentUser }) => {
                     <ul className="space-y-2 font-medium">
                         <SideNavItem icon={<Squares2X2Icon className="w-5 h-5 text-gray-500"/>} label="Dashboard" active={view === 'dashboard'} onClick={() => setView('dashboard')} />
                         <SideNavItem icon={<ClipboardDocumentListIcon className="w-5 h-5 text-gray-500" />} label="Inventory Status" active={view === 'inventory'} onClick={() => setView('inventory')} />
+                        <SideNavItem icon={<AlertTriangleIcon className="w-5 h-5 text-gray-500" />} label="Low Stock Alerts" active={view === 'low_stock'} onClick={() => setView('low_stock')} />
                         <SideNavItem icon={<ArchiveBoxIcon className="w-5 h-5 text-gray-500"/>} label="Order History" active={view === 'order_history'} onClick={() => setView('order_history')} />
                         <SideNavItem icon={<ReceiptRefundIcon className="w-5 h-5 text-gray-500"/>} label="Issuance History" active={view === 'issuance_history'} onClick={() => setView('issuance_history')} />
                         <SideNavItem icon={<ClipboardDocumentCheckIcon className="w-5 h-5 text-gray-500"/>} label="Purchase Intents" active={view === 'intents_all'} onClick={() => setView('intents_all')} />

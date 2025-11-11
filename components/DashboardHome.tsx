@@ -5,8 +5,8 @@ import StatCard from './StatCard';
 import LowStockAlerts from './LowStockAlerts';
 import OrderTable from './OrderTable';
 import PurchaseIntentsTable from './PurchaseIntentsTable';
-// FIX: Standardized icon import to use './icons' to resolve filename casing conflict.
-import { ArchiveBoxIcon, AlertTriangleIcon, ClipboardDocumentCheckIcon } from './icons';
+// FIX: Standardized icon import to use './Icons' to resolve filename casing conflict.
+import { ArchiveBoxIcon, AlertTriangleIcon, ClipboardDocumentCheckIcon } from './Icons';
 
 interface DashboardHomeProps {
     currentUser: User;
@@ -15,7 +15,6 @@ interface DashboardHomeProps {
     onConfirmDelivery: (order: PurchaseOrder) => void;
     onApproveOrder?: (orderId: string) => void;
     onRejectOrder?: (order: PurchaseOrder) => void;
-    onCreateOrderForLowStock: (materialId: string) => void;
     onViewIntent: (intent: PurchaseIntent) => void;
 }
 
@@ -26,7 +25,6 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({
     onConfirmDelivery,
     onApproveOrder, 
     onRejectOrder,
-    onCreateOrderForLowStock,
     onViewIntent,
  }) => {
     const { inventory, orders, purchaseIntents, vendors, materials } = useAppContext();
@@ -57,7 +55,6 @@ const DashboardHome: React.FC<DashboardHomeProps> = ({
                     colorClass="bg-sky-100"
                 />
             </div>
-            {currentUser.role !== 'purchaser' && <LowStockAlerts lowStockItems={lowStockItems} onCreateOrder={onCreateOrderForLowStock} />}
             {currentUser.role === 'purchaser' && intentsAwaitingReview.length > 0 && 
                 <PurchaseIntentsTable 
                     title="Intents Awaiting Your Review"

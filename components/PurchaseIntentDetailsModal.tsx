@@ -1,8 +1,8 @@
 import React from 'react';
 import { PurchaseIntent, Material, User, PurchaseIntentStatus } from '../types';
 import Modal from './Modal';
-// FIX: Standardized icon import to use './icons' to resolve filename casing conflict.
-import { HandThumbUpIcon, HandThumbDownIcon, ArrowRightCircleIcon } from './icons';
+// FIX: Standardized icon import to use './Icons' to resolve filename casing conflict.
+import { HandThumbUpIcon, HandThumbDownIcon, ArrowRightCircleIcon } from './Icons';
 
 interface PurchaseIntentDetailsModalProps {
   isOpen: boolean;

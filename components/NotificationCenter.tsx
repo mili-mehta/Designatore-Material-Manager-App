@@ -2,8 +2,8 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import { useAppContext } from '../context/AppContext';
 import { AppNotification } from '../types';
-// FIX: Standardized icon import to use './icons' to resolve filename casing conflict.
-import { CheckCircleIcon, AlertTriangleIcon, InformationCircleIcon, XMarkIcon } from './icons';
+// FIX: Standardized icon import to use './Icons' to resolve filename casing conflict.
+import { CheckCircleIcon, AlertTriangleIcon, InformationCircleIcon, XMarkIcon } from './Icons';
 
 const Notification: React.FC<{ notification: AppNotification; onDismiss: (id: number) => void; }> = ({ notification, onDismiss }) => {
   const { type, message, id } = notification;
